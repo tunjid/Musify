@@ -26,36 +26,6 @@ interface SearchRepository {
         countryCode: String
     ): FetchedResource<SearchResults, MusifyErrorType>
 
-    fun getPaginatedSearchStreamForAlbums(
-        searchQuery: String,
-        countryCode: String
-    ): Flow<PagingData<SearchResult.AlbumSearchResult>>
-
-    fun getPaginatedSearchStreamForArtists(
-        searchQuery: String,
-        countryCode: String
-    ): Flow<PagingData<SearchResult.ArtistSearchResult>>
-
-    fun getPaginatedSearchStreamForTracks(
-        searchQuery: String,
-        countryCode: String
-    ): Flow<PagingData<SearchResult.TrackSearchResult>>
-
-    fun getPaginatedSearchStreamForPlaylists(
-        searchQuery: String,
-        countryCode: String
-    ): Flow<PagingData<SearchResult.PlaylistSearchResult>>
-
-    fun getPaginatedSearchStreamForPodcasts(
-        searchQuery: String,
-        countryCode: String
-    ): Flow<PagingData<SearchResult.PodcastSearchResult>>
-
-    fun getPaginatedSearchStreamForEpisodes(
-        searchQuery: String,
-        countryCode: String
-    ): Flow<PagingData<SearchResult.EpisodeSearchResult>>
-
     fun searchFor(
         contentQuery: ContentQuery
     ): Flow<SearchResults>
