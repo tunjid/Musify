@@ -7,15 +7,22 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
+import com.example.musify.data.repositories.podcastsrepository.PodcastQuery
 import com.example.musify.data.repositories.podcastsrepository.PodcastsRepository
+import com.example.musify.data.tiling.Page
+import com.example.musify.data.tiling.toTiledList
 import com.example.musify.data.utils.FetchedResource
 import com.example.musify.domain.PodcastEpisode
 import com.example.musify.domain.PodcastShow
 import com.example.musify.ui.navigation.MusifyNavigationDestinations
 import com.example.musify.usecases.getCurrentlyPlayingEpisodePlaybackStateUseCase.GetCurrentlyPlayingEpisodePlaybackStateUseCase
+import com.tunjid.tiler.emptyTiledList
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 import com.example.musify.usecases.getCurrentlyPlayingEpisodePlaybackStateUseCase.GetCurrentlyPlayingEpisodePlaybackStateUseCase.PlaybackState as UseCasePlaybackState
@@ -33,10 +40,26 @@ class PodcastShowDetailViewModel @Inject constructor(
 
     private val showId =
         savedStateHandle.get<String>(MusifyNavigationDestinations.PodcastShowDetailScreen.NAV_ARG_PODCAST_SHOW_ID)!!
-    val episodesForShowStream = podcastsRepository.getPodcastEpisodesStreamForPodcastShow(
-        showId = showId,
-        countryCode = getCountryCode()
+
+    private val episodesQuery = MutableStateFlow(
+        PodcastQuery(
+            showId = showId,
+            countryCode = getCountryCode(),
+            page = Page(offset = 0)
+        )
     )
+    val episodesForShow = episodesQuery.toTiledList(
+        startQuery = episodesQuery.value,
+        queryFor = { copy(page = it) },
+        fetcher = podcastsRepository::podcastsFor
+    )
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5_000),
+            initialValue = emptyTiledList()
+        )
+
+    val onQueryChanged: (PodcastQuery) -> Unit = episodesQuery::value::set
 
     var currentlyPlayingEpisode by mutableStateOf<PodcastEpisode?>(null)
         private set

@@ -15,7 +15,6 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import androidx.navigation.navigation
-import androidx.paging.compose.collectAsLazyPagingItems
 import com.example.musify.R
 import com.example.musify.domain.PodcastEpisode
 import com.example.musify.domain.SearchResult
@@ -385,7 +384,10 @@ private fun NavGraphBuilder.podcastShowDetailScreen(
     composable(route = route) {
         val viewModel = hiltViewModel<PodcastShowDetailViewModel>()
         val uiState = viewModel.uiState
-        val episodesForShow = viewModel.episodesForShowStream.collectAsLazyPagingItems()
+        val episodesForShow by viewModel.episodesForShow.collectAsState()
+        val onQueryChanged = remember {
+            viewModel.onQueryChanged
+        }
         if (viewModel.podcastShow == null) {
             Box(modifier = Modifier.fillMaxSize()) {
                 if (uiState == PodcastShowDetailViewModel.UiState.LOADING) {
@@ -413,7 +415,8 @@ private fun NavGraphBuilder.podcastShowDetailScreen(
                 isCurrentlyPlayingEpisodePaused = viewModel.isCurrentlyPlayingEpisodePaused,
                 isPlaybackLoading = uiState == PodcastShowDetailViewModel.UiState.PLAYBACK_LOADING,
                 onEpisodeClicked = onEpisodeClicked,
-                episodes = episodesForShow
+                episodes = episodesForShow,
+                onQueryChanged = onQueryChanged,
             )
         }
     }

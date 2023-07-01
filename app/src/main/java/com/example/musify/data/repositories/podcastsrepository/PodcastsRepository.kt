@@ -1,11 +1,19 @@
 package com.example.musify.data.repositories.podcastsrepository
 
 import androidx.paging.PagingData
+import com.example.musify.data.tiling.Page
+import com.example.musify.data.tiling.PagedQuery
 import com.example.musify.data.utils.FetchedResource
 import com.example.musify.domain.MusifyErrorType
 import com.example.musify.domain.PodcastEpisode
 import com.example.musify.domain.PodcastShow
 import kotlinx.coroutines.flow.Flow
+
+data class PodcastQuery(
+    override val page: Page,
+    val showId: String,
+    val countryCode: String,
+) : PagedQuery
 
 /**
  * A repository that contains all methods related to podcasts.
@@ -20,9 +28,8 @@ interface PodcastsRepository {
         showId: String,
         countryCode: String
     ): FetchedResource<PodcastShow, MusifyErrorType>
-    
-    fun getPodcastEpisodesStreamForPodcastShow(
-        showId: String,
-        countryCode: String
-    ): Flow<PagingData<PodcastEpisode>>
+
+    fun podcastsFor(
+        query: PodcastQuery
+    ): Flow<List<PodcastEpisode>>
 }

@@ -6,12 +6,14 @@ import com.example.musify.domain.SearchResult
 import com.example.musify.domain.SearchResults
 import com.tunjid.tiler.PivotRequest
 import com.tunjid.tiler.Tile
+import com.tunjid.tiler.emptyTiledList
 import com.tunjid.tiler.listTiler
 import com.tunjid.tiler.toPivotedTileInputs
 import com.tunjid.tiler.toTiledList
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.retry
@@ -26,21 +28,6 @@ interface PagedQuery {
 data class Page(
     val offset: Int,
     val limit: Int = LIMIT,
-)
-
-fun <T : PagedQuery, R> pivotRequest(
-    queryFor: T.(Page) -> T
-) = PivotRequest<T, R>(
-    onCount = 3,
-    offCount = 4,
-    comparator = compareBy { it.page.offset },
-    nextQuery = {
-        queryFor(Page(offset = page.offset + page.limit))
-    },
-    previousQuery = {
-        if (page.offset == 0) null
-        else queryFor(Page(offset = page.offset - page.limit))
-    },
 )
 
 fun <Query : PagedQuery, Item> Flow<Query>.toTiledList(
@@ -67,6 +54,22 @@ fun <Query : PagedQuery, Item> Flow<Query>.toTiledList(
                             // retry on any IOException but also introduce delay if retrying
                             (e is IOException).also { if (it) delay(1000) }
                         }
+                        .catch { emit(emptyTiledList<Query, Item>()) }
                 }
             )
         )
+
+private fun <T : PagedQuery, R> pivotRequest(
+    queryFor: T.(Page) -> T
+) = PivotRequest<T, R>(
+    onCount = 3,
+    offCount = 4,
+    comparator = compareBy { it.page.offset },
+    nextQuery = {
+        queryFor(Page(offset = page.offset + page.limit))
+    },
+    previousQuery = {
+        if (page.offset == 0) null
+        else queryFor(Page(offset = page.offset - page.limit))
+    },
+)

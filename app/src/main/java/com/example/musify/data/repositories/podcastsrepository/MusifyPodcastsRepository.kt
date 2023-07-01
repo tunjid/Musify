@@ -1,9 +1,6 @@
 package com.example.musify.data.repositories.podcastsrepository
 
-import androidx.paging.Pager
 import androidx.paging.PagingConfig
-import androidx.paging.PagingData
-import com.example.musify.data.paging.PodcastEpisodesForPodcastShowPagingSource
 import com.example.musify.data.remote.musicservice.SpotifyService
 import com.example.musify.data.remote.response.toPodcastEpisode
 import com.example.musify.data.remote.response.toPodcastShow
@@ -14,6 +11,7 @@ import com.example.musify.domain.MusifyErrorType
 import com.example.musify.domain.PodcastEpisode
 import com.example.musify.domain.PodcastShow
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
 import javax.inject.Inject
 
 class MusifyPodcastsRepository @Inject constructor(
@@ -40,15 +38,25 @@ class MusifyPodcastsRepository @Inject constructor(
         ).toPodcastShow()
     }
 
-    override fun getPodcastEpisodesStreamForPodcastShow(
-        showId: String,
-        countryCode: String
-    ): Flow<PagingData<PodcastEpisode>> = Pager(pagingConfig) {
-        PodcastEpisodesForPodcastShowPagingSource(
-            showId = showId,
-            countryCode = countryCode,
-            tokenRepository = tokenRepository,
-            spotifyService = spotifyService
+    override fun podcastsFor(
+        query: PodcastQuery
+    ): Flow<List<PodcastEpisode>> = flow {
+        val showResponse = spotifyService.getShowWithId(
+            token = tokenRepository.getValidBearerToken(),
+            id = query.showId,
+            market = query.countryCode,
         )
-    }.flow
+        val episodes = spotifyService.getEpisodesForShowWithId(
+            token = tokenRepository.getValidBearerToken(),
+            id = query.showId,
+            market = query.countryCode,
+            limit = query.page.limit,
+            offset = query.page.offset
+        )
+            .items
+            .map {
+                it.toPodcastEpisode(showResponse)
+            }
+        emit(episodes)
+    }
 }
