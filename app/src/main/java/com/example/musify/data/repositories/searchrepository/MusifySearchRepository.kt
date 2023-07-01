@@ -3,7 +3,13 @@ package com.example.musify.data.repositories.searchrepository
 import androidx.paging.Pager
 import androidx.paging.PagingConfig
 import androidx.paging.PagingData
-import com.example.musify.data.paging.*
+import com.example.musify.data.paging.SpotifyAlbumSearchPagingSource
+import com.example.musify.data.paging.SpotifyArtistSearchPagingSource
+import com.example.musify.data.paging.SpotifyEpisodeSearchPagingSource
+import com.example.musify.data.paging.SpotifyPlaylistSearchPagingSource
+import com.example.musify.data.paging.SpotifyPodcastSearchPagingSource
+import com.example.musify.data.paging.SpotifyTrackSearchPagingSource
+import com.example.musify.data.remote.musicservice.SearchQueryType
 import com.example.musify.data.remote.musicservice.SpotifyService
 import com.example.musify.data.remote.response.toSearchResults
 import com.example.musify.data.repositories.tokenrepository.TokenRepository
@@ -13,6 +19,7 @@ import com.example.musify.domain.MusifyErrorType
 import com.example.musify.domain.SearchResult
 import com.example.musify.domain.SearchResults
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
 import javax.inject.Inject
 
 class MusifySearchRepository @Inject constructor(
@@ -98,4 +105,20 @@ class MusifySearchRepository @Inject constructor(
             spotifyService = spotifyService
         )
     }.flow
+
+    override fun searchFor(
+        contentQuery: ContentQuery
+    ): Flow<SearchResults> = flow {
+        emit(
+            spotifyService.search(
+                searchQuery = contentQuery.searchQuery,
+                market = contentQuery.countryCode,
+                token = tokenRepository.getValidBearerToken(),
+                limit = contentQuery.page.limit,
+                offset = contentQuery.page.offset,
+                type = contentQuery.type.value
+            ).toSearchResults()
+        )
+    }
 }
+

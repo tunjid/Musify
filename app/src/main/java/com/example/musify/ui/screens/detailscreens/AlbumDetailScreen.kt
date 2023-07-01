@@ -87,7 +87,6 @@ fun AlbumDetailScreen(
                     MusifyCompactTrackCard(
                         track = it,
                         onClick = onTrackItemClick,
-                        isLoadingPlaceholderVisible = false,
                         isCurrentlyPlaying = it == currentlyPlayingTrack,
                         isAlbumArtVisible = false,
                         subtitleTextStyle = LocalTextStyle.current.copy(

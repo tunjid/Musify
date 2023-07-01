@@ -8,6 +8,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.text.KeyboardActionScope
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.material.*
@@ -28,25 +30,26 @@ import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.paging.compose.LazyPagingItems
 import com.example.musify.R
+import com.example.musify.data.repositories.searchrepository.ContentQuery
 import com.example.musify.domain.Genre
 import com.example.musify.domain.SearchResult
 import com.example.musify.ui.components.*
 import com.example.musify.viewmodels.searchviewmodel.SearchFilter
-import kotlinx.coroutines.launch
+import com.tunjid.tiler.TiledList
+import com.tunjid.tiler.compose.PivotedTilingEffect
 
 /**
  * A data class that contains all the different paging items associated
  * with the[SearchScreen].
  */
 data class PagingItemsForSearchScreen(
-    val albumListForSearchQuery: LazyPagingItems<SearchResult.AlbumSearchResult>,
-    val artistListForSearchQuery: LazyPagingItems<SearchResult.ArtistSearchResult>,
-    val tracksListForSearchQuery: LazyPagingItems<SearchResult.TrackSearchResult>,
-    val playlistListForSearchQuery: LazyPagingItems<SearchResult.PlaylistSearchResult>,
-    val podcastListForSearchQuery: LazyPagingItems<SearchResult.PodcastSearchResult>,
-    val episodeListForSearchQuery: LazyPagingItems<SearchResult.EpisodeSearchResult>
+    val albumListForSearchQuery: TiledList<ContentQuery, SearchResult.AlbumSearchResult>,
+    val artistListForSearchQuery: TiledList<ContentQuery, SearchResult.ArtistSearchResult>,
+    val tracksListForSearchQuery: TiledList<ContentQuery, SearchResult.TrackSearchResult>,
+    val playlistListForSearchQuery: TiledList<ContentQuery, SearchResult.PlaylistSearchResult>,
+    val podcastListForSearchQuery: TiledList<ContentQuery, SearchResult.PodcastSearchResult>,
+    val episodeListForSearchQuery: TiledList<ContentQuery, SearchResult.EpisodeSearchResult>
 )
 
 // fix lazy list scrolling to top after config change
@@ -61,12 +64,11 @@ fun SearchScreen(
     pagingItems: PagingItemsForSearchScreen,
     currentlyPlayingTrack: SearchResult.TrackSearchResult?,
     currentlySelectedFilter: SearchFilter,
+    onQueryChanged: (ContentQuery) -> Unit,
     onSearchFilterChanged: (SearchFilter) -> Unit,
     onGenreItemClick: (Genre) -> Unit,
     onSearchTextChanged: (searchText: String) -> Unit,
-    onErrorRetryButtonClick: (searchQuery: String) -> Unit,
     isLoading: Boolean,
-    isSearchErrorMessageVisible: Boolean,
     onSearchQueryItemClicked: (SearchResult) -> Unit,
     onImeDoneButtonClicked: KeyboardActionScope.(searchText: String) -> Unit,
     isFullScreenNowPlayingOverlayScreenVisible: Boolean
@@ -74,11 +76,7 @@ fun SearchScreen(
     var searchText by rememberSaveable { mutableStateOf("") }
     var isSearchListVisible by rememberSaveable { mutableStateOf(false) }
     val focusManager = LocalFocusManager.current
-    val isSearchItemLoadingPlaceholderVisibleMap = remember {
-        mutableStateMapOf<SearchResult, Boolean>()
-    }
     val isFilterChipGroupVisible by remember { derivedStateOf { isSearchListVisible } }
-    val coroutineScope = rememberCoroutineScope()
     // If there are nested back handlers and both of them are enabled, then the
     // handler that is at the root of the nested hierarchy will consume the
     // back handler event. Hence, any back handlers declared at a higher level
@@ -96,7 +94,6 @@ fun SearchScreen(
         }
         isSearchListVisible = false
     }
-    val lazyListState = rememberLazyListState()
     val searchBarBackgroundAlpha by remember(isSearchListVisible) {
         mutableStateOf(if (isSearchListVisible) 0.8f else 1f)
     }
@@ -129,31 +126,38 @@ fun SearchScreen(
             },
             onFilterClicked = {
                 onSearchFilterChanged(it)
-                coroutineScope.launch { lazyListState.animateScrollToItem(0) }
             },
         )
-        AnimatedContent(targetState = isSearchListVisible,
-            transitionSpec = { fadeIn() with fadeOut() }) { targetState ->
+
+        val pagerState = rememberPagerState()
+
+        LaunchedEffect(currentlySelectedFilter) {
+            pagerState.scrollToPage(SearchFilter.values().indexOf(currentlySelectedFilter))
+        }
+        LaunchedEffect(pagerState.currentPage) {
+            onSearchFilterChanged(SearchFilter.values()[pagerState.currentPage])
+        }
+
+        AnimatedContent(
+            targetState = isSearchListVisible,
+            transitionSpec = { fadeIn() with fadeOut() },
+            label = ""
+        ) { targetState ->
             when (targetState) {
-                true -> SearchQueryList(
-                    pagingItems = pagingItems,
-                    onItemClick = { onSearchQueryItemClicked(it) },
-                    isLoadingPlaceholderVisible = { item ->
-                        isSearchItemLoadingPlaceholderVisibleMap.getOrPut(item) { false }
-                    },
-                    onImageLoadingFinished = { item, _ ->
-                        isSearchItemLoadingPlaceholderVisibleMap[item] = false
-                    },
-                    onImageLoading = {
-                        isSearchItemLoadingPlaceholderVisibleMap[it] = true
-                    },
-                    isSearchResultsLoadingAnimationVisible = isLoading,
-                    currentlyPlayingTrack = currentlyPlayingTrack,
-                    lazyListState = lazyListState,
-                    currentlySelectedFilter = currentlySelectedFilter,
-                    isSearchErrorMessageVisible = isSearchErrorMessageVisible,
-                    onErrorRetryButtonClick = { onErrorRetryButtonClick(searchText) }
-                )
+                true -> HorizontalPager(
+                    pageCount = SearchFilter.values().size,
+                    state = pagerState
+                ) { page ->
+                    SearchQueryList(
+                        pagingItems = pagingItems,
+                        onItemClick = { onSearchQueryItemClicked(it) },
+                        isSearchResultsLoadingAnimationVisible = isLoading,
+                        currentlyPlayingTrack = currentlyPlayingTrack,
+                        onQueryChanged = onQueryChanged,
+                        currentlySelectedFilter = SearchFilter.values()[page],
+                    )
+                }
+
                 false -> GenresGrid(
                     modifier = Modifier
                         .background(MaterialTheme.colors.background)
@@ -172,15 +176,11 @@ fun SearchScreen(
 private fun SearchQueryList(
     pagingItems: PagingItemsForSearchScreen,
     onItemClick: (SearchResult) -> Unit,
+    onQueryChanged: (ContentQuery) -> Unit,
     currentlySelectedFilter: SearchFilter,
-    isLoadingPlaceholderVisible: (SearchResult) -> Boolean,
-    onImageLoading: (SearchResult) -> Unit,
-    onImageLoadingFinished: (SearchResult, Throwable?) -> Unit,
     currentlyPlayingTrack: SearchResult.TrackSearchResult?,
     lazyListState: LazyListState = rememberLazyListState(),
     isSearchResultsLoadingAnimationVisible: Boolean = false,
-    isSearchErrorMessageVisible: Boolean = false,
-    onErrorRetryButtonClick: () -> Unit
 ) {
     val artistImageErrorPainter =
         rememberVectorPainter(ImageVector.vectorResource(id = R.drawable.ic_outline_account_circle_24))
@@ -188,69 +188,52 @@ private fun SearchQueryList(
         rememberVectorPainter(image = ImageVector.vectorResource(id = R.drawable.ic_outline_music_note_24))
 
     Box(modifier = Modifier.fillMaxSize()) {
-        if (isSearchErrorMessageVisible) {
-            DefaultMusifyErrorMessage(
-                title = "Oops! Something doesn't look right",
-                subtitle = "Please check the internet connection",
-                modifier = Modifier
-                    .align(Alignment.Center)
-                    .imePadding(),
-                onRetryButtonClicked = onErrorRetryButtonClick
-            )
-        } else {
-            LazyColumn(
-                modifier = Modifier
-                    .background(MaterialTheme.colors.background.copy(alpha = 0.7f))
-                    .fillMaxSize(),
-                state = lazyListState,
-                contentPadding = PaddingValues(
-                    bottom = MusifyBottomNavigationConstants.navigationHeight + MusifyMiniPlayerConstants.miniPlayerHeight
-                ),
-            ) {
-                when (currentlySelectedFilter) {
-                    SearchFilter.ALBUMS -> searchAlbumListItems(
-                        albumListForSearchQuery = pagingItems.albumListForSearchQuery,
-                        onItemClick = onItemClick,
-                        isLoadingPlaceholderVisible = isLoadingPlaceholderVisible,
-                        onImageLoading = onImageLoading,
-                        onImageLoadingFinished = onImageLoadingFinished
-                    )
-                    SearchFilter.TRACKS -> searchTrackListItems(
-                        tracksListForSearchQuery = pagingItems.tracksListForSearchQuery,
-                        onItemClick = onItemClick,
-                        isLoadingPlaceholderVisible = isLoadingPlaceholderVisible,
-                        onImageLoading = onImageLoading,
-                        onImageLoadingFinished = onImageLoadingFinished,
-                        currentlyPlayingTrack = currentlyPlayingTrack
-                    )
-                    SearchFilter.ARTISTS -> searchArtistListItems(
-                        artistListForSearchQuery = pagingItems.artistListForSearchQuery,
-                        onItemClick = onItemClick,
-                        isLoadingPlaceholderVisible = isLoadingPlaceholderVisible,
-                        onImageLoading = onImageLoading,
-                        onImageLoadingFinished = onImageLoadingFinished,
-                        artistImageErrorPainter = artistImageErrorPainter
-                    )
-                    SearchFilter.PLAYLISTS -> searchPlaylistListItems(
-                        playlistListForSearchQuery = pagingItems.playlistListForSearchQuery,
-                        onItemClick = onItemClick,
-                        isLoadingPlaceholderVisible = isLoadingPlaceholderVisible,
-                        onImageLoading = onImageLoading,
-                        onImageLoadingFinished = onImageLoadingFinished,
-                        playlistImageErrorPainter = playlistImageErrorPainter
-                    )
-                    SearchFilter.PODCASTS -> searchPodcastListItems(
-                        podcastsForSearchQuery = pagingItems.podcastListForSearchQuery,
-                        episodesForSearchQuery = pagingItems.episodeListForSearchQuery,
-                        onPodcastItemClicked = onItemClick,
-                        onEpisodeItemClicked = onItemClick
-                    )
-                }
-                item {
-                    Spacer(modifier = Modifier.windowInsetsBottomHeight(WindowInsets.navigationBars))
-                }
+
+        LazyColumn(
+            modifier = Modifier
+                .background(MaterialTheme.colors.background.copy(alpha = 0.7f))
+                .fillMaxSize(),
+            state = lazyListState,
+            contentPadding = PaddingValues(
+                bottom = MusifyBottomNavigationConstants.navigationHeight + MusifyMiniPlayerConstants.miniPlayerHeight
+            ),
+        ) {
+            when (currentlySelectedFilter) {
+                SearchFilter.ALBUMS -> searchAlbumListItems(
+                    albumListForSearchQuery = pagingItems.albumListForSearchQuery,
+                    onItemClick = onItemClick,
+                )
+
+                SearchFilter.TRACKS -> searchTrackListItems(
+                    tracksListForSearchQuery = pagingItems.tracksListForSearchQuery,
+                    onItemClick = onItemClick,
+                    currentlyPlayingTrack = currentlyPlayingTrack
+                )
+
+                SearchFilter.ARTISTS -> searchArtistListItems(
+                    artistListForSearchQuery = pagingItems.artistListForSearchQuery,
+                    onItemClick = onItemClick,
+                    artistImageErrorPainter = artistImageErrorPainter
+                )
+
+                SearchFilter.PLAYLISTS -> searchPlaylistListItems(
+                    playlistListForSearchQuery = pagingItems.playlistListForSearchQuery,
+                    onItemClick = onItemClick,
+                    playlistImageErrorPainter = playlistImageErrorPainter
+                )
+
+                SearchFilter.PODCASTS -> searchPodcastListItems(
+                    podcastsForSearchQuery = pagingItems.podcastListForSearchQuery,
+                    episodesForSearchQuery = pagingItems.episodeListForSearchQuery,
+                    onPodcastItemClicked = onItemClick,
+                    onEpisodeItemClicked = onItemClick
+                )
+            }
+            item {
+                Spacer(modifier = Modifier.windowInsetsBottomHeight(WindowInsets.navigationBars))
             }
         }
+
         val musifyLoadingAnimationModifier = if (WindowInsets.isImeVisible) {
             Modifier
                 .align(Alignment.Center)
@@ -265,6 +248,18 @@ private fun SearchQueryList(
         DefaultMusifyLoadingAnimation(
             modifier = musifyLoadingAnimationModifier,
             isVisible = isSearchResultsLoadingAnimationVisible
+        )
+        lazyListState.PivotedTilingEffect(
+            items = when (currentlySelectedFilter) {
+                SearchFilter.ALBUMS -> pagingItems.albumListForSearchQuery
+                SearchFilter.TRACKS -> pagingItems.tracksListForSearchQuery
+                SearchFilter.ARTISTS -> pagingItems.artistListForSearchQuery
+                SearchFilter.PLAYLISTS -> pagingItems.playlistListForSearchQuery
+                SearchFilter.PODCASTS -> pagingItems.podcastListForSearchQuery
+            },
+            onQueryChanged = {
+                it?.let(onQueryChanged)
+            }
         )
     }
 }

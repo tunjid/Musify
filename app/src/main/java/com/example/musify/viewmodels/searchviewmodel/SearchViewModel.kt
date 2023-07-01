@@ -7,19 +7,39 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.paging.PagingData
 import androidx.paging.cachedIn
+import com.example.musify.data.remote.musicservice.SearchQueryType
 import com.example.musify.data.repositories.genresrepository.GenresRepository
+import com.example.musify.data.repositories.searchrepository.ContentQuery
 import com.example.musify.data.repositories.searchrepository.SearchRepository
+import com.example.musify.data.repositories.searchrepository.itemsFor
+import com.example.musify.data.tiling.Page
 import com.example.musify.di.IODispatcher
 import com.example.musify.domain.SearchResult
+import com.example.musify.domain.SearchResults
 import com.example.musify.usecases.getCurrentlyPlayingTrackUseCase.GetCurrentlyPlayingTrackUseCase
 import com.example.musify.usecases.getPlaybackLoadingStatusUseCase.GetPlaybackLoadingStatusUseCase
 import com.example.musify.viewmodels.getCountryCode
+import com.tunjid.tiler.PivotRequest
+import com.tunjid.tiler.Tile
+import com.tunjid.tiler.TiledList
+import com.tunjid.tiler.emptyTiledList
+import com.tunjid.tiler.listTiler
+import com.tunjid.tiler.toPivotedTileInputs
+import com.tunjid.tiler.toTiledList
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.retry
+import kotlinx.coroutines.flow.stateIn
+import java.io.IOException
 import javax.inject.Inject
 
 /**
@@ -38,44 +58,70 @@ class SearchViewModel @Inject constructor(
     private val searchRepository: SearchRepository
 ) : AndroidViewModel(application) {
 
-    private var searchJob: Job? = null
-
     private val _uiState = mutableStateOf(SearchScreenUiState.IDLE)
     val uiState = _uiState as State<SearchScreenUiState>
 
+    private val albumsQuery = SearchQueryType.ALBUM.contentFlow(
+        countryCode = getCountryCode(),
+    )
+    val albumsTiledList = albumsQuery.toTiledList<SearchResult.AlbumSearchResult>(
+        searchRepository = searchRepository,
+        scope = viewModelScope,
+    )
+
+    private val artistsQuery = SearchQueryType.ARTIST.contentFlow(
+        countryCode = getCountryCode(),
+    )
+    val artistsTiledList = artistsQuery.toTiledList<SearchResult.ArtistSearchResult>(
+        searchRepository = searchRepository,
+        scope = viewModelScope,
+    )
+
+    private val episodesQuery = SearchQueryType.EPISODE.contentFlow(
+        countryCode = getCountryCode(),
+    )
+    val episodesTiledList = episodesQuery.toTiledList<SearchResult.EpisodeSearchResult>(
+        searchRepository = searchRepository,
+        scope = viewModelScope,
+    )
+
+    private val playlistsQuery = SearchQueryType.PLAYLIST.contentFlow(
+        countryCode = getCountryCode(),
+    )
+    val playlistsTiledList = playlistsQuery.toTiledList<SearchResult.PlaylistSearchResult>(
+        searchRepository = searchRepository,
+        scope = viewModelScope,
+    )
+
+    private val showsQuery = SearchQueryType.SHOW.contentFlow(
+        countryCode = getCountryCode(),
+    )
+    val showsTiledList = showsQuery.toTiledList<SearchResult.PodcastSearchResult>(
+        searchRepository = searchRepository,
+        scope = viewModelScope,
+    )
+
+    private val tracksQuery = SearchQueryType.TRACK.contentFlow(
+        countryCode = getCountryCode(),
+    )
+    val tracksTiledList = tracksQuery.toTiledList<SearchResult.TrackSearchResult>(
+        searchRepository = searchRepository,
+        scope = viewModelScope,
+    )
+
+    val onContentQueryChanged = { query: ContentQuery ->
+        when (query.type) {
+            SearchQueryType.ALBUM -> albumsQuery.value = query
+            SearchQueryType.ARTIST -> artistsQuery.value = query
+            SearchQueryType.PLAYLIST -> playlistsQuery.value = query
+            SearchQueryType.TRACK -> tracksQuery.value = query
+            SearchQueryType.SHOW -> showsQuery.value = query
+            SearchQueryType.EPISODE -> episodesQuery.value = query
+        }
+    }
+
     private val _currentlySelectedFilter = mutableStateOf(SearchFilter.TRACKS)
     val currentlySelectedFilter = _currentlySelectedFilter as State<SearchFilter>
-
-    private val _albumListForSearchQuery =
-        MutableStateFlow<PagingData<SearchResult.AlbumSearchResult>>(PagingData.empty())
-    val albumListForSearchQuery =
-        _albumListForSearchQuery as Flow<PagingData<SearchResult.AlbumSearchResult>>
-
-    private val _artistListForSearchQuery =
-        MutableStateFlow<PagingData<SearchResult.ArtistSearchResult>>(PagingData.empty())
-    val artistListForSearchQuery =
-        _artistListForSearchQuery as Flow<PagingData<SearchResult.ArtistSearchResult>>
-
-    private val _trackListForSearchQuery =
-        MutableStateFlow<PagingData<SearchResult.TrackSearchResult>>(PagingData.empty())
-    val trackListForSearchQuery =
-        _trackListForSearchQuery as Flow<PagingData<SearchResult.TrackSearchResult>>
-
-    private val _playlistListForSearchQuery =
-        MutableStateFlow<PagingData<SearchResult.PlaylistSearchResult>>(PagingData.empty())
-    val playlistListForSearchQuery =
-        _playlistListForSearchQuery as Flow<PagingData<SearchResult.PlaylistSearchResult>>
-
-    private val _podcastListForSearchQuery =
-        MutableStateFlow<PagingData<SearchResult.PodcastSearchResult>>(PagingData.empty())
-    val podcastListForSearchQuery =
-        _podcastListForSearchQuery as Flow<PagingData<SearchResult.PodcastSearchResult>>
-
-    private val _episodeListForSearchQuery =
-        MutableStateFlow<PagingData<SearchResult.EpisodeSearchResult>>(PagingData.empty())
-
-    val episodeListForSearchQuery =
-        _episodeListForSearchQuery as Flow<PagingData<SearchResult.EpisodeSearchResult>>
 
     val currentlyPlayingTrackStream = getCurrentlyPlayingTrackUseCase.currentlyPlayingTrackStream
 
@@ -95,116 +141,31 @@ class SearchViewModel @Inject constructor(
             .launchIn(viewModelScope)
     }
 
-    private fun collectAndAssignSearchResults(searchQuery: String) {
-        searchRepository.getPaginatedSearchStreamForAlbums(
-            searchQuery = searchQuery,
-            countryCode = getCountryCode()
-        ).cachedIn(viewModelScope)
-            .collectInViewModelScopeUpdatingUiState(currentlySelectedFilter.value == SearchFilter.ALBUMS) {
-                _albumListForSearchQuery.value = it
-            }
-        searchRepository.getPaginatedSearchStreamForArtists(
-            searchQuery = searchQuery,
-            countryCode = getCountryCode()
-        ).cachedIn(viewModelScope)
-            .collectInViewModelScopeUpdatingUiState(currentlySelectedFilter.value == SearchFilter.ARTISTS) {
-                _artistListForSearchQuery.value = it
-            }
-        searchRepository.getPaginatedSearchStreamForTracks(
-            searchQuery = searchQuery,
-            countryCode = getCountryCode()
-        ).cachedIn(viewModelScope)
-            .collectInViewModelScopeUpdatingUiState(currentlySelectedFilter.value == SearchFilter.TRACKS) {
-                _trackListForSearchQuery.value = it
-            }
-        searchRepository.getPaginatedSearchStreamForPlaylists(
-            searchQuery = searchQuery,
-            countryCode = getCountryCode()
-        ).cachedIn(viewModelScope)
-            .collectInViewModelScopeUpdatingUiState(currentlySelectedFilter.value == SearchFilter.PLAYLISTS) {
-                _playlistListForSearchQuery.value = it
-            }
-        searchRepository.getPaginatedSearchStreamForPodcasts(
-            searchQuery = searchQuery,
-            countryCode = getCountryCode()
-        ).cachedIn(viewModelScope)
-            .collectInViewModelScopeUpdatingUiState(currentlySelectedFilter.value == SearchFilter.PODCASTS) {
-                _podcastListForSearchQuery.value = it
-            }
-        searchRepository.getPaginatedSearchStreamForEpisodes(
-            searchQuery = searchQuery,
-            countryCode = getCountryCode()
-        ).cachedIn(viewModelScope)
-            .collectInViewModelScopeUpdatingUiState(currentlySelectedFilter.value == SearchFilter.PODCASTS) {
-                _episodeListForSearchQuery.value = it
-            }
-
-    }
-
-    private fun setEmptyValuesToAllSearchResults() {
-        _albumListForSearchQuery.value = PagingData.empty()
-        _artistListForSearchQuery.value = PagingData.empty()
-        _trackListForSearchQuery.value = PagingData.empty()
-        _playlistListForSearchQuery.value = PagingData.empty()
-        _podcastListForSearchQuery.value = PagingData.empty()
-        _episodeListForSearchQuery.value = PagingData.empty()
-    }
-
-    /**
-     * Used to collect a flow and set the the [_uiState] to
-     * [SearchScreenUiState.SUCCESS] based on the [updateUiStatePredicate]
-     * after running the [collectBlock]. The [_uiState] will be set to
-     * [SearchScreenUiState.SUCCESS] if, and only if, [updateUiStatePredicate]
-     * is true and the current value of [_uiState] is equal to
-     * [SearchScreenUiState.LOADING].
-     *
-     * This method is mainly used to update the [_uiState] to
-     * [SearchScreenUiState.SUCCESS] based on the [currentlySelectedFilter].
-     * This prevents the [_uiState] to be assigned to [SearchScreenUiState.LOADING]
-     * for as long as all the flows get collected. Instead, the ui state will be
-     * updated to [SearchScreenUiState.SUCCESS] as soon as the flow
-     * for the [currentlySelectedFilter] is collected.
-     *
-     * For eg: If the user has selected the current filter to be [SearchFilter.ALBUMS],
-     * this [_uiState] will be set to [SearchScreenUiState.SUCCESS] immediately
-     * after the search results for the album has been set. This precludes the
-     * need for waiting for other flows, such as artists/tracks to be collected
-     * before setting the [_uiState] to [SearchScreenUiState.SUCCESS]
-     * for the search results since the user just wants to see the album list.
-     */
-    private fun <T> Flow<T>.collectInViewModelScopeUpdatingUiState(
-        updateUiStatePredicate: Boolean,
-        collectBlock: (T) -> Unit
-    ) {
-        viewModelScope.launch {
-            withContext(ioDispatcher) {
-                collect {
-                    collectBlock(it)
-                    if (_uiState.value == SearchScreenUiState.LOADING && updateUiStatePredicate)
-                        _uiState.value = SearchScreenUiState.IDLE
-                }
-            }
-        }
-    }
-
     fun search(searchQuery: String) {
-        searchJob?.cancel()
-        if (searchQuery.isBlank()) {
-            setEmptyValuesToAllSearchResults()
-            _uiState.value = SearchScreenUiState.IDLE
-            return
-        }
-        _uiState.value = SearchScreenUiState.LOADING
-        searchJob = viewModelScope.launch {
-            // add artificial delay to limit the number of calls to
-            // the api when the user is typing the search query.
-            // adding this delay allows for a short window of time
-            // which could be used to cancel this coroutine if the
-            // search text is currently being typed; preventing
-            // un-necessary calls to the api
-            delay(500)
-            collectAndAssignSearchResults(searchQuery)
-        }
+        albumsQuery.value = SearchQueryType.ALBUM.contentQueryFor(
+            searchQuery = searchQuery,
+            countryCode = getCountryCode()
+        )
+        artistsQuery.value = SearchQueryType.ARTIST.contentQueryFor(
+            searchQuery = searchQuery,
+            countryCode = getCountryCode()
+        )
+        episodesQuery.value = SearchQueryType.EPISODE.contentQueryFor(
+            searchQuery = searchQuery,
+            countryCode = getCountryCode()
+        )
+        playlistsQuery.value = SearchQueryType.PLAYLIST.contentQueryFor(
+            searchQuery = searchQuery,
+            countryCode = getCountryCode()
+        )
+        showsQuery.value = SearchQueryType.SHOW.contentQueryFor(
+            searchQuery = searchQuery,
+            countryCode = getCountryCode()
+        )
+        tracksQuery.value = SearchQueryType.TRACK.contentQueryFor(
+            searchQuery = searchQuery,
+            countryCode = getCountryCode()
+        )
     }
 
     fun getAvailableGenres() = genresRepository.fetchAvailableGenres()
@@ -212,4 +173,78 @@ class SearchViewModel @Inject constructor(
     fun updateSearchFilter(newSearchFilter: SearchFilter) {
         _currentlySelectedFilter.value = newSearchFilter
     }
+
+    private fun SearchQueryType.contentQueryFor(
+        searchQuery: String,
+        countryCode: String,
+    ) = ContentQuery(
+        type = this,
+        searchQuery = searchQuery,
+        page = Page(offset = 0),
+        countryCode = countryCode
+    )
+
+    private inline fun SearchQueryType.contentFlow(
+        countryCode: String
+    ) = MutableStateFlow(
+        contentQueryFor(
+            searchQuery = "",
+            countryCode = countryCode
+        )
+    )
+
+    private inline fun <reified T : SearchResult> MutableStateFlow<ContentQuery>.toTiledList(
+        searchRepository: SearchRepository,
+        scope: CoroutineScope,
+    ): StateFlow<TiledList<ContentQuery, T>> = debounce {
+        if (it.searchQuery.length < 2) 0
+        else 500
+    }
+        .toPivotedTileInputs(searchPivot())
+        .toTiledList(
+            listTiler(
+                order = Tile.Order.PivotSorted(
+                    query = value,
+                    comparator = compareBy { it.page.offset }
+                ),
+                limiter = Tile.Limiter(
+                    maxQueries = 5
+                ),
+                fetcher = { query ->
+                    if (query.searchQuery.isEmpty()) emptyFlow()
+                    else searchRepository.searchFor(query).map<SearchResults, List<T>>(SearchResults::itemsFor)
+                        .retry(retries = 10) { e ->
+                            e.printStackTrace()
+                            // retry on any IOException but also introduce delay if retrying
+                            (e is IOException).also { if (it) delay(1000) }
+                        }
+
+                }
+            )
+        )
+        .onEach {
+            if (value.type == SearchQueryType.ALBUM) println("OUT ${it.size} items")
+        }
+        .stateIn(
+            scope = scope,
+            started = SharingStarted.WhileSubscribed(5_000),
+            initialValue = emptyTiledList()
+        ) as StateFlow<TiledList<ContentQuery, T>>
+
+    private fun searchPivot() = PivotRequest<ContentQuery, SearchResult>(
+        onCount = 3,
+        offCount = 4,
+        comparator = compareBy { it.page.offset },
+        nextQuery = {
+            copy(
+                page = Page(offset = page.offset + page.limit)
+            )
+        },
+        previousQuery = {
+            if (page.offset == 0) null
+            else copy(
+                page = Page(offset = page.offset - page.limit)
+            )
+        },
+    )
 }

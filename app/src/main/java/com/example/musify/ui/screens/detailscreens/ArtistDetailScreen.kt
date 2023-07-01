@@ -112,9 +112,6 @@ fun ArtistDetailScreen(
                             .caption
                             .copy(color = subtitleTextColorWithAlpha),
                         onClick = onTrackClicked,
-                        isLoadingPlaceholderVisible = false,
-                        onImageLoading = {},
-                        onImageLoadingFinished = { _, _ -> },
                         isCurrentlyPlaying = track == currentlyPlayingTrack
                     )
                 }

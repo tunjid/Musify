@@ -13,8 +13,6 @@ import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import androidx.paging.LoadState
-import androidx.paging.compose.collectAsLazyPagingItems
 import com.example.musify.domain.HomeFeedCarouselCardInfo
 import com.example.musify.domain.HomeFeedFilters
 import com.example.musify.domain.SearchResult
@@ -118,14 +116,13 @@ private fun NavGraphBuilder.searchScreen(
 ) {
     composable(route = route) {
         val viewModel = hiltViewModel<SearchViewModel>()
-        val albums = viewModel.albumListForSearchQuery.collectAsLazyPagingItems()
-        val artists = viewModel.artistListForSearchQuery.collectAsLazyPagingItems()
-        val playlists = viewModel.playlistListForSearchQuery.collectAsLazyPagingItems()
-        val tracks = viewModel.trackListForSearchQuery.collectAsLazyPagingItems()
-        val podcasts = viewModel.podcastListForSearchQuery.collectAsLazyPagingItems()
-        val episodes = viewModel.episodeListForSearchQuery.collectAsLazyPagingItems()
-        val pagingItems = remember {
-            PagingItemsForSearchScreen(
+        val albums by viewModel.albumsTiledList.collectAsState()
+        val artists by viewModel.artistsTiledList.collectAsState()
+        val playlists by viewModel.playlistsTiledList.collectAsState()
+        val tracks by viewModel.tracksTiledList.collectAsState()
+        val podcasts by viewModel.showsTiledList.collectAsState()
+        val episodes by viewModel.episodesTiledList.collectAsState()
+        val pagingItems = PagingItemsForSearchScreen(
                 albums,
                 artists,
                 tracks,
@@ -133,11 +130,11 @@ private fun NavGraphBuilder.searchScreen(
                 podcasts,
                 episodes
             )
-        }
         val uiState by viewModel.uiState
         val isLoadingError by remember {
             derivedStateOf {
-                tracks.loadState.refresh is LoadState.Error || tracks.loadState.append is LoadState.Error || tracks.loadState.prepend is LoadState.Error
+//                tracks.loadState.refresh is LoadState.Error || tracks.loadState.append is LoadState.Error || tracks.loadState.prepend is LoadState.
+                false
             }
         }
         val controller = LocalSoftwareKeyboardController.current
@@ -147,11 +144,11 @@ private fun NavGraphBuilder.searchScreen(
         val dynamicBackgroundResource by remember {
             derivedStateOf {
                 val imageUrl = when (currentlySelectedFilter) {
-                    SearchFilter.ALBUMS -> albums.itemSnapshotList.firstOrNull()?.albumArtUrlString
-                    SearchFilter.TRACKS -> tracks.itemSnapshotList.firstOrNull()?.imageUrlString
-                    SearchFilter.ARTISTS -> artists.itemSnapshotList.firstOrNull()?.imageUrlString
-                    SearchFilter.PLAYLISTS -> playlists.itemSnapshotList.firstOrNull()?.imageUrlString
-                    SearchFilter.PODCASTS -> podcasts.itemSnapshotList.firstOrNull()?.imageUrlString
+                    SearchFilter.ALBUMS -> albums.firstOrNull()?.albumArtUrlString
+                    SearchFilter.TRACKS -> tracks.firstOrNull()?.imageUrlString
+                    SearchFilter.ARTISTS -> artists.firstOrNull()?.imageUrlString
+                    SearchFilter.PLAYLISTS -> playlists.firstOrNull()?.imageUrlString
+                    SearchFilter.PODCASTS -> podcasts.firstOrNull()?.imageUrlString
                 }
                 if (imageUrl == null) DynamicBackgroundResource.Empty
                 else DynamicBackgroundResource.FromImageUrl(imageUrl)
@@ -162,14 +159,15 @@ private fun NavGraphBuilder.searchScreen(
             SearchScreen(
                 genreList = genres,
                 searchScreenFilters = filters,
+                pagingItems = pagingItems,
+                currentlyPlayingTrack = currentlyPlayingTrack,
+                currentlySelectedFilter = viewModel.currentlySelectedFilter.value,
+                onQueryChanged = viewModel.onContentQueryChanged,
+                onSearchFilterChanged = viewModel::updateSearchFilter,
                 onGenreItemClick = {},
                 onSearchTextChanged = viewModel::search,
                 isLoading = uiState == SearchScreenUiState.LOADING,
-                pagingItems = pagingItems,
                 onSearchQueryItemClicked = onSearchResultClicked,
-                currentlySelectedFilter = viewModel.currentlySelectedFilter.value,
-                onSearchFilterChanged = viewModel::updateSearchFilter,
-                isSearchErrorMessageVisible = isLoadingError,
                 onImeDoneButtonClicked = {
                     // Search only if there was an error while loading.
                     // A manual call to search() is not required
@@ -182,9 +180,7 @@ private fun NavGraphBuilder.searchScreen(
                     if (isLoadingError) viewModel.search(it)
                     controller?.hide()
                 },
-                currentlyPlayingTrack = currentlyPlayingTrack,
-                isFullScreenNowPlayingOverlayScreenVisible = isFullScreenNowPlayingScreenOverlayVisible,
-                onErrorRetryButtonClick = viewModel::search
+                isFullScreenNowPlayingOverlayScreenVisible = isFullScreenNowPlayingScreenOverlayVisible
             )
         }
     }

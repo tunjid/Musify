@@ -51,14 +51,11 @@ import com.example.musify.domain.SearchResult
 fun MusifyCompactTrackCard(
     track: SearchResult.TrackSearchResult,
     onClick: (SearchResult.TrackSearchResult) -> Unit,
-    isLoadingPlaceholderVisible: Boolean,
     modifier: Modifier = Modifier,
     shape: Shape = RectangleShape,
     backgroundColor: Color = MaterialTheme.colors.surface,
     isCurrentlyPlaying: Boolean = false,
     isAlbumArtVisible: Boolean = true,
-    onImageLoading: ((SearchResult.TrackSearchResult) -> Unit)? = null,
-    onImageLoadingFinished: ((SearchResult.TrackSearchResult, Throwable?) -> Unit)? = null,
     titleTextStyle: TextStyle = LocalTextStyle.current,
     subtitleTextStyle: TextStyle = LocalTextStyle.current,
     contentPadding: PaddingValues = MusifyCompactTrackCardDefaults.defaultContentPadding
@@ -80,11 +77,6 @@ fun MusifyCompactTrackCard(
             subtitle = track.artistsString,
             onClick = { onClick(track) },
             onTrailingButtonIconClick = {},
-            isLoadingPlaceHolderVisible = isLoadingPlaceholderVisible,
-            onThumbnailLoading = { onImageLoading?.invoke(track) },
-            onThumbnailImageLoadingFinished = { throwable ->
-                onImageLoadingFinished?.invoke(track, throwable)
-            },
             titleTextStyle = if (isCurrentlyPlaying) trackPlayingTextStyle else titleTextStyle,
             subtitleTextStyle = subtitleTextStyle,
             contentPadding = contentPadding

@@ -1,9 +1,17 @@
 package com.example.musify.ui.screens.searchscreen
 
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.ime
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyItemScope
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
@@ -15,11 +23,16 @@ import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.paging.compose.LazyPagingItems
-import androidx.paging.compose.items
-import androidx.paging.compose.itemsIndexed
+import com.example.musify.data.repositories.searchrepository.ContentQuery
 import com.example.musify.domain.SearchResult
-import com.example.musify.ui.components.*
+import com.example.musify.ui.components.DefaultMusifyErrorMessage
+import com.example.musify.ui.components.EpisodeListCard
+import com.example.musify.ui.components.ListItemCardType
+import com.example.musify.ui.components.MusifyCompactListItemCard
+import com.example.musify.ui.components.MusifyCompactTrackCard
+import com.example.musify.ui.components.MusifyCompactTrackCardDefaults
+import com.example.musify.ui.components.PodcastCard
+import com.tunjid.tiler.TiledList
 
 /**
  * A color that is meant to be applied to all types of search items.
@@ -34,12 +47,9 @@ private val CardShape = RectangleShape
 
 @ExperimentalMaterialApi
 fun LazyListScope.searchTrackListItems(
-    tracksListForSearchQuery: LazyPagingItems<SearchResult.TrackSearchResult>,
+    tracksListForSearchQuery: TiledList<ContentQuery, SearchResult.TrackSearchResult>,
     currentlyPlayingTrack: SearchResult.TrackSearchResult?,
     onItemClick: (SearchResult) -> Unit,
-    isLoadingPlaceholderVisible: (SearchResult.TrackSearchResult) -> Boolean,
-    onImageLoading: (SearchResult) -> Unit,
-    onImageLoadingFinished: (SearchResult.TrackSearchResult, Throwable?) -> Unit
 ) {
     itemsIndexedWithEmptyListContent(
         items = tracksListForSearchQuery,
@@ -52,9 +62,6 @@ fun LazyListScope.searchTrackListItems(
                 shape = CardShape,
                 track = it,
                 onClick = onItemClick,
-                isLoadingPlaceholderVisible = isLoadingPlaceholderVisible(it),
-                onImageLoading = onImageLoading,
-                onImageLoadingFinished = onImageLoadingFinished,
                 isCurrentlyPlaying = it == currentlyPlayingTrack
             )
         }
@@ -63,13 +70,11 @@ fun LazyListScope.searchTrackListItems(
 
 @ExperimentalMaterialApi
 fun LazyListScope.searchAlbumListItems(
-    albumListForSearchQuery: LazyPagingItems<SearchResult.AlbumSearchResult>,
+    albumListForSearchQuery: TiledList<ContentQuery, SearchResult.AlbumSearchResult>,
     onItemClick: (SearchResult) -> Unit,
-    isLoadingPlaceholderVisible: (SearchResult.AlbumSearchResult) -> Boolean,
-    onImageLoading: (SearchResult) -> Unit,
-    onImageLoadingFinished: (SearchResult.AlbumSearchResult, Throwable?) -> Unit
 ) {
 
+    println("There are ${albumListForSearchQuery.size} albums")
     itemsIndexedWithEmptyListContent(
         items = albumListForSearchQuery,
         cardType = ListItemCardType.ALBUM,
@@ -85,11 +90,6 @@ fun LazyListScope.searchAlbumListItems(
                 subtitle = it.artistsString,
                 onClick = { onItemClick(it) },
                 onTrailingButtonIconClick = { onItemClick(it) },
-                isLoadingPlaceHolderVisible = isLoadingPlaceholderVisible(it),
-                onThumbnailImageLoadingFinished = { throwable ->
-                    onImageLoadingFinished(it, throwable)
-                },
-                onThumbnailLoading = { onImageLoading(it) },
                 contentPadding = MusifyCompactTrackCardDefaults.defaultContentPadding
             )
         }
@@ -98,11 +98,8 @@ fun LazyListScope.searchAlbumListItems(
 
 @ExperimentalMaterialApi
 fun LazyListScope.searchArtistListItems(
-    artistListForSearchQuery: LazyPagingItems<SearchResult.ArtistSearchResult>,
+    artistListForSearchQuery: TiledList<ContentQuery, SearchResult.ArtistSearchResult>,
     onItemClick: (SearchResult) -> Unit,
-    isLoadingPlaceholderVisible: (SearchResult.ArtistSearchResult) -> Boolean,
-    onImageLoading: (SearchResult) -> Unit,
-    onImageLoadingFinished: (SearchResult.ArtistSearchResult, Throwable?) -> Unit,
     artistImageErrorPainter: Painter
 ) {
     itemsIndexedWithEmptyListContent(
@@ -120,11 +117,6 @@ fun LazyListScope.searchArtistListItems(
                 subtitle = "Artist",
                 onClick = { onItemClick(it) },
                 onTrailingButtonIconClick = { onItemClick(it) },
-                isLoadingPlaceHolderVisible = isLoadingPlaceholderVisible(it),
-                onThumbnailImageLoadingFinished = { throwable ->
-                    onImageLoadingFinished(it, throwable)
-                },
-                onThumbnailLoading = { onImageLoading(it) },
                 errorPainter = artistImageErrorPainter,
                 contentPadding = MusifyCompactTrackCardDefaults.defaultContentPadding
             )
@@ -134,11 +126,8 @@ fun LazyListScope.searchArtistListItems(
 
 @ExperimentalMaterialApi
 fun LazyListScope.searchPlaylistListItems(
-    playlistListForSearchQuery: LazyPagingItems<SearchResult.PlaylistSearchResult>,
+    playlistListForSearchQuery: TiledList<ContentQuery, SearchResult.PlaylistSearchResult>,
     onItemClick: (SearchResult) -> Unit,
-    isLoadingPlaceholderVisible: (SearchResult.PlaylistSearchResult) -> Boolean,
-    onImageLoading: (SearchResult) -> Unit,
-    onImageLoadingFinished: (SearchResult.PlaylistSearchResult, Throwable?) -> Unit,
     playlistImageErrorPainter: Painter
 ) {
     itemsIndexedWithEmptyListContent(
@@ -156,11 +145,6 @@ fun LazyListScope.searchPlaylistListItems(
                 subtitle = "Playlist",
                 onClick = { onItemClick(it) },
                 onTrailingButtonIconClick = { onItemClick(it) },
-                isLoadingPlaceHolderVisible = isLoadingPlaceholderVisible(it),
-                onThumbnailImageLoadingFinished = { throwable ->
-                    onImageLoadingFinished(it, throwable)
-                },
-                onThumbnailLoading = { onImageLoading(it) },
                 errorPainter = playlistImageErrorPainter,
                 contentPadding = MusifyCompactTrackCardDefaults.defaultContentPadding
             )
@@ -170,8 +154,8 @@ fun LazyListScope.searchPlaylistListItems(
 
 @ExperimentalMaterialApi
 fun LazyListScope.searchPodcastListItems(
-    podcastsForSearchQuery: LazyPagingItems<SearchResult.PodcastSearchResult>,
-    episodesForSearchQuery: LazyPagingItems<SearchResult.EpisodeSearchResult>,
+    podcastsForSearchQuery: TiledList<ContentQuery, SearchResult.PodcastSearchResult>,
+    episodesForSearchQuery: TiledList<ContentQuery, SearchResult.EpisodeSearchResult>,
     onPodcastItemClicked: (SearchResult.PodcastSearchResult) -> Unit,
     onEpisodeItemClicked: (SearchResult.EpisodeSearchResult) -> Unit
 ) {
@@ -192,15 +176,16 @@ fun LazyListScope.searchPodcastListItems(
             horizontalArrangement = Arrangement.spacedBy(16.dp),
             contentPadding = PaddingValues(horizontal = 16.dp)
         ) {
-            items(podcastsForSearchQuery) { podcast ->
-                podcast?.let {
-                    PodcastCard(
-                        podcastArtUrlString = it.imageUrlString,
-                        name = it.name,
-                        nameOfPublisher = it.nameOfPublisher,
-                        onClick = { onPodcastItemClicked(it) }
-                    )
-                }
+            items(
+                items = podcastsForSearchQuery
+            ) { podcast ->
+                PodcastCard(
+                    podcastArtUrlString = podcast.imageUrlString,
+                    name = podcast.name,
+                    nameOfPublisher = podcast.nameOfPublisher,
+                    onClick = { onPodcastItemClicked(podcast) }
+                )
+
             }
         }
     }
@@ -216,7 +201,7 @@ fun LazyListScope.searchPodcastListItems(
 }
 
 private fun <T : Any> LazyListScope.itemsIndexedWithEmptyListContent(
-    items: LazyPagingItems<T>,
+    items: TiledList<ContentQuery, T>,
     cardType: ListItemCardType? = null,
     key: ((index: Int, item: T) -> Any)? = null,
     emptyListContent: @Composable LazyItemScope.() -> Unit = {
@@ -243,9 +228,18 @@ private fun <T : Any> LazyListScope.itemsIndexedWithEmptyListContent(
     },
     itemContent: @Composable LazyItemScope.(index: Int, value: T?) -> Unit
 ) {
-    if (items.loadState.append.endOfPaginationReached && items.itemCount == 0) {
-        item { emptyListContent.invoke(this) }
-    } else {
-        itemsIndexed(items, key, itemContent)
-    }
+    itemsIndexed(
+        items = items,
+        key = key,
+        itemContent = itemContent
+    )
+//    if (items.isEmpty()) {
+//        item { emptyListContent.invoke(this) }
+//    } else {
+//        itemsIndexed(
+//            items = items,
+//            key = key,
+//            itemContent = itemContent
+//        )
+//    }
 }

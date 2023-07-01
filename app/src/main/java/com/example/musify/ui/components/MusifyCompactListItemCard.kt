@@ -60,12 +60,6 @@ enum class ListItemCardType { ALBUM, ARTIST, TRACK, PLAYLIST }
  * color, font, line height etc.
  * @param subtitleTextStyle the style configuration for the [subtitle] such
  * as color, font, line height etc.
- * @param onThumbnailLoading the callback to execute when the thumbnail
- * image is loading.
- * @param onThumbnailImageLoadingFinished the lambda to execute when the image
- * is done loading. A nullable parameter of type [Throwable] is provided
- * to the lambda, that indicates whether the image loading process was
- * successful or not.
  * @param errorPainter A [Painter] that is displayed when the image request is unsuccessful.
  * @param isLoadingPlaceHolderVisible indicates whether the loading
  * placeholder is visible for the thumbnail image.
@@ -90,8 +84,6 @@ fun MusifyCompactListItemCard(
     titleTextStyle: TextStyle = LocalTextStyle.current,
     subtitleTextStyle: TextStyle = LocalTextStyle.current,
     isLoadingPlaceHolderVisible: Boolean = false,
-    onThumbnailLoading: (() -> Unit)? = null,
-    onThumbnailImageLoadingFinished: ((Throwable?) -> Unit)? = null,
     errorPainter: Painter? = null,
     placeholderHighlight: PlaceholderHighlight = PlaceholderHighlight.shimmer(),
     contentPadding: PaddingValues = PaddingValues(all = 8.dp)
@@ -121,8 +113,8 @@ fun MusifyCompactListItemCard(
                     model = it,
                     contentScale = ContentScale.Crop,
                     isLoadingPlaceholderVisible = isLoadingPlaceHolderVisible,
-                    onImageLoading = { onThumbnailLoading?.invoke() },
-                    onImageLoadingFinished = { onThumbnailImageLoadingFinished?.invoke(it) },
+                    onImageLoading = { },
+                    onImageLoadingFinished = { },
                     placeholderHighlight = placeholderHighlight,
                     errorPainter = errorPainter,
                     alpha = LocalContentAlpha.current,
@@ -187,15 +179,7 @@ fun MusifyCompactListItemCard(
  * color, font, line height etc.
  * @param subtitleTextStyle The style configuration for the [subtitle] such
  * as color, font, line height etc.
- * @param onThumbnailLoading the callback to execute when the thumbnail
- * image is loading.
- * @param onThumbnailImageLoadingFinished the lambda to execute when the image
- * is done loading. A nullable parameter of type [Throwable] is provided
- * to the lambda, that indicates whether the image loading process was
- * successful or not.
  * @param errorPainter A [Painter] that is displayed when the image request is unsuccessful.
- * @param isLoadingPlaceHolderVisible indicates whether the loading
- * placeholder is visible for the thumbnail image.
  * @param contentPadding the [PaddingValues] to be applied to the content
  * of the card.
  * @param placeholderHighlight the [PlaceholderHighlight] to apply to the
@@ -215,9 +199,6 @@ fun MusifyCompactListItemCard(
     shape: Shape = MaterialTheme.shapes.medium,
     titleTextStyle: TextStyle = LocalTextStyle.current,
     subtitleTextStyle: TextStyle = LocalTextStyle.current,
-    isLoadingPlaceHolderVisible: Boolean = false,
-    onThumbnailLoading: (() -> Unit)? = null,
-    onThumbnailImageLoadingFinished: ((Throwable?) -> Unit)? = null,
     errorPainter: Painter? = null,
     placeholderHighlight: PlaceholderHighlight = PlaceholderHighlight.shimmer(),
     contentPadding: PaddingValues = PaddingValues(8.dp)
@@ -238,9 +219,6 @@ fun MusifyCompactListItemCard(
         thumbnailShape = if (cardType == ListItemCardType.ARTIST) CircleShape else null,
         titleTextStyle = titleTextStyle,
         subtitleTextStyle = subtitleTextStyle,
-        isLoadingPlaceHolderVisible = isLoadingPlaceHolderVisible,
-        onThumbnailLoading = onThumbnailLoading,
-        onThumbnailImageLoadingFinished = onThumbnailImageLoadingFinished,
         placeholderHighlight = placeholderHighlight,
         errorPainter = errorPainter,
         contentPadding = contentPadding

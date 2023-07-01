@@ -95,7 +95,6 @@ fun PlaylistDetailScreen(
                         MusifyCompactTrackCard(
                             track = it,
                             onClick = onTrackClicked,
-                            isLoadingPlaceholderVisible = false,
                             isCurrentlyPlaying = it == currentlyPlayingTrack,
                             isAlbumArtVisible = true,
                             subtitleTextStyle = LocalTextStyle.current.copy(
