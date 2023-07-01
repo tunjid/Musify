@@ -6,17 +6,43 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.windowInsetsBottomHeight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.*
+import androidx.compose.material.ContentAlpha
+import androidx.compose.material.ExperimentalMaterialApi
+import androidx.compose.material.FloatingActionButton
+import androidx.compose.material.Icon
+import androidx.compose.material.IconButton
+import androidx.compose.material.MaterialTheme
+import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -29,11 +55,19 @@ import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.paging.compose.LazyPagingItems
-import androidx.paging.compose.itemsIndexed
+import com.example.musify.data.repositories.albumsrepository.ArtistAlbumsQuery
 import com.example.musify.domain.SearchResult
-import com.example.musify.ui.components.*
+import com.example.musify.ui.components.AsyncImageWithPlaceholder
+import com.example.musify.ui.components.DefaultMusifyLoadingAnimation
+import com.example.musify.ui.components.DetailScreenTopAppBar
+import com.example.musify.ui.components.ListItemCardType
+import com.example.musify.ui.components.MusifyBottomNavigationConstants
+import com.example.musify.ui.components.MusifyCompactListItemCard
+import com.example.musify.ui.components.MusifyCompactTrackCard
+import com.example.musify.ui.components.MusifyMiniPlayerConstants
 import com.example.musify.ui.dynamicTheme.dynamicbackgroundmodifier.DynamicBackgroundResource
+import com.tunjid.tiler.TiledList
+import com.tunjid.tiler.compose.PivotedTilingEffect
 import kotlinx.coroutines.launch
 
 @ExperimentalMaterialApi
@@ -42,8 +76,9 @@ fun ArtistDetailScreen(
     artistName: String,
     artistImageUrlString: String?,
     popularTracks: List<SearchResult.TrackSearchResult>,
-    releases: LazyPagingItems<SearchResult.AlbumSearchResult>,
+    releases: TiledList<ArtistAlbumsQuery, SearchResult.AlbumSearchResult>,
     currentlyPlayingTrack: SearchResult.TrackSearchResult?,
+    onQueryChanged: (ArtistAlbumsQuery) -> Unit,
     onBackButtonClicked: () -> Unit,
     onPlayButtonClicked: () -> Unit,
     onTrackClicked: (SearchResult.TrackSearchResult) -> Unit,
@@ -126,23 +161,21 @@ fun ArtistDetailScreen(
                 items = releases,
                 key = { index, album -> "$index$album" }
             ) { _, album ->
-                album?.let {
-                    MusifyCompactListItemCard(
-                        modifier = Modifier
-                            .height(80.dp)
-                            .padding(horizontal = 16.dp),
-                        cardType = ListItemCardType.ALBUM,
-                        thumbnailImageUrlString = it.albumArtUrlString,
-                        title = it.name,
-                        titleTextStyle = MaterialTheme.typography.h6,
-                        subtitle = it.yearOfReleaseString,
-                        subtitleTextStyle = MaterialTheme.typography
-                            .subtitle2
-                            .copy(color = subtitleTextColorWithAlpha),
-                        onClick = { onAlbumClicked(it) },
-                        onTrailingButtonIconClick = { onAlbumClicked(it) }
-                    )
-                }
+                MusifyCompactListItemCard(
+                    modifier = Modifier
+                        .height(80.dp)
+                        .padding(horizontal = 16.dp),
+                    cardType = ListItemCardType.ALBUM,
+                    thumbnailImageUrlString = album.albumArtUrlString,
+                    title = album.name,
+                    titleTextStyle = MaterialTheme.typography.h6,
+                    subtitle = album.yearOfReleaseString,
+                    subtitleTextStyle = MaterialTheme.typography
+                        .subtitle2
+                        .copy(color = subtitleTextColorWithAlpha),
+                    onClick = { onAlbumClicked(album) },
+                    onTrailingButtonIconClick = { onAlbumClicked(album) }
+                )
             }
             item {
                 Spacer(modifier = Modifier.windowInsetsBottomHeight(WindowInsets.navigationBars))
@@ -190,6 +223,10 @@ fun ArtistDetailScreen(
                 }
             )
         }
+        lazyListState.PivotedTilingEffect(
+            items = releases,
+            onQueryChanged = { if (it != null) onQueryChanged(it) }
+        )
     }
 }
 

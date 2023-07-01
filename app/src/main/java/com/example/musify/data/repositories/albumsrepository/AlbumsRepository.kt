@@ -1,10 +1,17 @@
 package com.example.musify.data.repositories.albumsrepository
 
-import androidx.paging.PagingData
+import com.example.musify.data.tiling.Page
+import com.example.musify.data.tiling.PagedQuery
 import com.example.musify.data.utils.FetchedResource
 import com.example.musify.domain.MusifyErrorType
 import com.example.musify.domain.SearchResult
 import kotlinx.coroutines.flow.Flow
+
+data class ArtistAlbumsQuery(
+    override val page: Page,
+    val artistId: String,
+    val countryCode: String,
+): PagedQuery
 
 /**
  * A repository that contains methods related to albums. **All methods
@@ -25,8 +32,7 @@ interface AlbumsRepository {
         countryCode: String
     ): FetchedResource<List<SearchResult.AlbumSearchResult>, MusifyErrorType>
 
-    fun getPaginatedStreamForAlbumsOfArtist(
-        artistId: String,
-        countryCode: String
-    ): Flow<PagingData<SearchResult.AlbumSearchResult>>
+    fun albumsFor(
+        query: ArtistAlbumsQuery
+    ): Flow<List<SearchResult.AlbumSearchResult>>
 }

@@ -1,9 +1,6 @@
 package com.example.musify.data.repositories.tracksrepository
 
-import androidx.paging.Pager
 import androidx.paging.PagingConfig
-import androidx.paging.PagingData
-import com.example.musify.data.paging.PlaylistTracksPagingSource
 import com.example.musify.data.remote.musicservice.SpotifyService
 import com.example.musify.data.remote.response.getTracks
 import com.example.musify.data.remote.response.toTrackSearchResult
@@ -15,6 +12,7 @@ import com.example.musify.domain.MusifyErrorType
 import com.example.musify.domain.SearchResult
 import com.example.musify.domain.toSupportedSpotifyGenreType
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
 import javax.inject.Inject
 
 class MusifyTracksRepository @Inject constructor(
@@ -58,15 +56,17 @@ class MusifyTracksRepository @Inject constructor(
             spotifyService.getAlbumWithId(albumId, countryCode, it).getTracks()
         }
 
-    override fun getPaginatedStreamForPlaylistTracks(
-        playlistId: String,
-        countryCode: String
-    ): Flow<PagingData<SearchResult.TrackSearchResult>> = Pager(pagingConfig) {
-        PlaylistTracksPagingSource(
-            playlistId = playlistId,
-            countryCode = countryCode,
-            tokenRepository = tokenRepository,
-            spotifyService = spotifyService
+    override fun playListsFor(
+        playListQuery: PlaylistQuery
+    ): Flow<List<SearchResult.TrackSearchResult>> = flow {
+        emit(
+            spotifyService.getTracksForPlaylist(
+                playlistId = playListQuery.id,
+                market = playListQuery.countryCode,
+                token = tokenRepository.getValidBearerToken(),
+                limit = playListQuery.page.limit,
+                offset = playListQuery.page.offset
+            ).items.map { it.track.toTrackSearchResult() }
         )
-    }.flow
+    }
 }

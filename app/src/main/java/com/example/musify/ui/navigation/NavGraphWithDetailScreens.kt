@@ -4,15 +4,17 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.navigation.*
+import androidx.navigation.NamedNavArgument
+import androidx.navigation.NavGraphBuilder
+import androidx.navigation.NavHostController
 import androidx.navigation.compose.composable
-import androidx.paging.LoadState
+import androidx.navigation.navArgument
+import androidx.navigation.navigation
 import androidx.paging.compose.collectAsLazyPagingItems
 import com.example.musify.R
 import com.example.musify.domain.PodcastEpisode
@@ -25,7 +27,11 @@ import com.example.musify.ui.screens.detailscreens.ArtistDetailScreen
 import com.example.musify.ui.screens.detailscreens.PlaylistDetailScreen
 import com.example.musify.ui.screens.detailscreens.PodcastEpisodeDetailScreen
 import com.example.musify.ui.screens.podcastshowdetailscreen.PodcastShowDetailScreen
-import com.example.musify.viewmodels.*
+import com.example.musify.viewmodels.AlbumDetailUiState
+import com.example.musify.viewmodels.AlbumDetailViewModel
+import com.example.musify.viewmodels.PlaylistDetailViewModel
+import com.example.musify.viewmodels.PodcastEpisodeDetailViewModel
+import com.example.musify.viewmodels.PodcastShowDetailViewModel
 import com.example.musify.viewmodels.artistviewmodel.ArtistDetailScreenUiState
 import com.example.musify.viewmodels.artistviewmodel.ArtistDetailViewModel
 import java.net.URLDecoder
@@ -137,7 +143,10 @@ private fun NavGraphBuilder.artistDetailScreen(
         val artistImageUrlString =
             arguments.getString(MusifyNavigationDestinations.ArtistDetailScreen.NAV_ARG_ENCODED_IMAGE_URL_STRING)
                 ?.run { URLDecoder.decode(this, StandardCharsets.UTF_8.toString()) }
-        val releases = viewModel.albumsOfArtistFlow.collectAsLazyPagingItems()
+        val releases by viewModel.artistAlbums.collectAsState()
+        val onQueryChanged = remember {
+            viewModel.onQueryChanged
+        }
         val uiState by viewModel.uiState
         val currentlyPlayingTrack by viewModel.currentlyPlayingTrackStream.collectAsState(initial = null)
         ArtistDetailScreen(
@@ -145,6 +154,7 @@ private fun NavGraphBuilder.artistDetailScreen(
             artistImageUrlString = artistImageUrlString,
             popularTracks = viewModel.popularTracks.value,
             releases = releases,
+            onQueryChanged = onQueryChanged,
             currentlyPlayingTrack = currentlyPlayingTrack,
             onBackButtonClicked = onBackButtonClicked,
             onPlayButtonClicked = {},
@@ -200,7 +210,10 @@ private fun NavGraphBuilder.playlistDetailScreen(
     composable(route = route, arguments = navigationArguments) {
         val arguments = it.arguments!!
         val viewModel = hiltViewModel<PlaylistDetailViewModel>()
-        val tracks = viewModel.tracks.collectAsLazyPagingItems()
+        val tracks by viewModel.tracks.collectAsState()
+        val onQueryChanged = remember {
+            viewModel.onQueryChanged
+        }
         val playlistName =
             arguments.getString(MusifyNavigationDestinations.PlaylistDetailScreen.NAV_ARG_PLAYLIST_NAME)!!
         val imageUrlString =
@@ -209,16 +222,8 @@ private fun NavGraphBuilder.playlistDetailScreen(
             arguments.getString(MusifyNavigationDestinations.PlaylistDetailScreen.NAV_ARG_OWNER_NAME)!!
         val totalNumberOfTracks =
             arguments.getString(MusifyNavigationDestinations.PlaylistDetailScreen.NAV_ARG_NUMBER_OF_TRACKS)!!
-        val isErrorMessageVisible by remember {
-            derivedStateOf {
-                tracks.loadState.refresh is LoadState.Error ||
-                        tracks.loadState.append is LoadState.Error ||
-                        tracks.loadState.prepend is LoadState.Error
 
-            }
-        }
         val currentlyPlayingTrack by viewModel.currentlyPlayingTrackStream.collectAsState(initial = null)
-        val isPlaybackLoading by viewModel.playbackLoadingStateStream.collectAsState(initial = false)
         PlaylistDetailScreen(
             playlistName = playlistName,
             playlistImageUrlString = imageUrlString,
@@ -226,11 +231,10 @@ private fun NavGraphBuilder.playlistDetailScreen(
             totalNumberOfTracks = totalNumberOfTracks,
             imageResToUseWhenImageUrlStringIsNull = R.drawable.ic_outline_account_circle_24,
             tracks = tracks,
+            onQueryChanged = onQueryChanged,
             currentlyPlayingTrack = currentlyPlayingTrack,
             onBackButtonClicked = onBackButtonClicked,
             onTrackClicked = onPlayTrack,
-            isLoading = tracks.loadState.refresh is LoadState.Loading || isPlaybackLoading,
-            isErrorMessageVisible = isErrorMessageVisible
         )
     }
 }
@@ -307,9 +311,11 @@ class NavGraphWithDetailScreensNestedController(
                 playTrack(searchResult)
                 return
             }
+
             is SearchResult.PodcastSearchResult -> {
                 MusifyNavigationDestinations.PodcastShowDetailScreen.buildRoute(searchResult.id)
             }
+
             is SearchResult.EpisodeSearchResult -> {
                 MusifyNavigationDestinations.PodcastEpisodeDetailScreen.buildRoute(searchResult.id)
             }

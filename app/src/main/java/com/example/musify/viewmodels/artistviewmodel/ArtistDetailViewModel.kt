@@ -6,18 +6,24 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
-import androidx.paging.cachedIn
+import com.example.musify.data.repositories.albumsrepository.ArtistAlbumsQuery
 import com.example.musify.data.repositories.albumsrepository.AlbumsRepository
 import com.example.musify.data.repositories.tracksrepository.TracksRepository
+import com.example.musify.data.tiling.Page
+import com.example.musify.data.tiling.toTiledList
 import com.example.musify.data.utils.FetchedResource
 import com.example.musify.domain.SearchResult
 import com.example.musify.ui.navigation.MusifyNavigationDestinations
 import com.example.musify.usecases.getCurrentlyPlayingTrackUseCase.GetCurrentlyPlayingTrackUseCase
 import com.example.musify.usecases.getPlaybackLoadingStatusUseCase.GetPlaybackLoadingStatusUseCase
 import com.example.musify.viewmodels.getCountryCode
+import com.tunjid.tiler.emptyTiledList
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -52,10 +58,25 @@ class ArtistDetailViewModel @Inject constructor(
 
     val currentlyPlayingTrackStream = getCurrentlyPlayingTrackUseCase.currentlyPlayingTrackStream
 
-    val albumsOfArtistFlow = albumsRepository.getPaginatedStreamForAlbumsOfArtist(
-        artistId = artistId,
-        countryCode = getCountryCode()
-    ).cachedIn(viewModelScope)
+    private val albumsQuery = MutableStateFlow(
+        ArtistAlbumsQuery(
+            artistId = artistId,
+            countryCode = getCountryCode(),
+            page = Page(offset = 0)
+        )
+    )
+    val artistAlbums = albumsQuery.toTiledList(
+        startQuery = albumsQuery.value,
+        queryFor = { copy(page = it) },
+        fetcher = albumsRepository::albumsFor
+    )
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5_000),
+            initialValue = emptyTiledList()
+        )
+
+    val onQueryChanged: (ArtistAlbumsQuery) -> Unit = albumsQuery::value::set
 
     init {
         viewModelScope.launch { fetchAndAssignPopularTracks() }

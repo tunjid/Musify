@@ -5,30 +5,24 @@ import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import androidx.paging.PagingData
-import androidx.paging.cachedIn
 import com.example.musify.data.remote.musicservice.SearchQueryType
 import com.example.musify.data.repositories.genresrepository.GenresRepository
 import com.example.musify.data.repositories.searchrepository.ContentQuery
 import com.example.musify.data.repositories.searchrepository.SearchRepository
 import com.example.musify.data.repositories.searchrepository.itemsFor
 import com.example.musify.data.tiling.Page
+import com.example.musify.data.tiling.toTiledList
 import com.example.musify.di.IODispatcher
 import com.example.musify.domain.SearchResult
 import com.example.musify.domain.SearchResults
 import com.example.musify.usecases.getCurrentlyPlayingTrackUseCase.GetCurrentlyPlayingTrackUseCase
 import com.example.musify.usecases.getPlaybackLoadingStatusUseCase.GetPlaybackLoadingStatusUseCase
 import com.example.musify.viewmodels.getCountryCode
-import com.tunjid.tiler.PivotRequest
-import com.tunjid.tiler.Tile
 import com.tunjid.tiler.TiledList
 import com.tunjid.tiler.emptyTiledList
-import com.tunjid.tiler.listTiler
-import com.tunjid.tiler.toPivotedTileInputs
-import com.tunjid.tiler.toTiledList
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.*
-import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -37,9 +31,7 @@ import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
-import kotlinx.coroutines.flow.retry
 import kotlinx.coroutines.flow.stateIn
-import java.io.IOException
 import javax.inject.Inject
 
 /**
@@ -196,55 +188,22 @@ class SearchViewModel @Inject constructor(
     private inline fun <reified T : SearchResult> MutableStateFlow<ContentQuery>.toTiledList(
         searchRepository: SearchRepository,
         scope: CoroutineScope,
-    ): StateFlow<TiledList<ContentQuery, T>> = debounce {
-        if (it.searchQuery.length < 2) 0
-        else 500
-    }
-        .toPivotedTileInputs(searchPivot())
-        .toTiledList(
-            listTiler(
-                order = Tile.Order.PivotSorted(
-                    query = value,
-                    comparator = compareBy { it.page.offset }
-                ),
-                limiter = Tile.Limiter(
-                    maxQueries = 5
-                ),
-                fetcher = { query ->
-                    if (query.searchQuery.isEmpty()) emptyFlow()
-                    else searchRepository.searchFor(query).map<SearchResults, List<T>>(SearchResults::itemsFor)
-                        .retry(retries = 10) { e ->
-                            e.printStackTrace()
-                            // retry on any IOException but also introduce delay if retrying
-                            (e is IOException).also { if (it) delay(1000) }
-                        }
-
-                }
-            )
+    ): StateFlow<TiledList<ContentQuery, T>> =
+        debounce {
+            if (it.searchQuery.length < 2) 0
+            else 500
+        }.toTiledList(
+            startQuery = value,
+            queryFor = { copy(page = it) },
+            fetcher = { query ->
+                if (query.searchQuery.isEmpty()) emptyFlow()
+                else searchRepository.searchFor(query)
+                    .map<SearchResults, List<T>>(SearchResults::itemsFor)
+            }
         )
-        .onEach {
-            if (value.type == SearchQueryType.ALBUM) println("OUT ${it.size} items")
-        }
-        .stateIn(
-            scope = scope,
-            started = SharingStarted.WhileSubscribed(5_000),
-            initialValue = emptyTiledList()
-        ) as StateFlow<TiledList<ContentQuery, T>>
-
-    private fun searchPivot() = PivotRequest<ContentQuery, SearchResult>(
-        onCount = 3,
-        offCount = 4,
-        comparator = compareBy { it.page.offset },
-        nextQuery = {
-            copy(
-                page = Page(offset = page.offset + page.limit)
+            .stateIn(
+                scope = scope,
+                started = SharingStarted.WhileSubscribed(5_000),
+                initialValue = emptyTiledList()
             )
-        },
-        previousQuery = {
-            if (page.offset == 0) null
-            else copy(
-                page = Page(offset = page.offset - page.limit)
-            )
-        },
-    )
 }

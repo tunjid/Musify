@@ -1,6 +1,7 @@
 package com.example.musify.data.repositories.tracksrepository
 
-import androidx.paging.PagingData
+import com.example.musify.data.tiling.Page
+import com.example.musify.data.tiling.PagedQuery
 import com.example.musify.data.utils.FetchedResource
 import com.example.musify.domain.Genre
 import com.example.musify.domain.MusifyErrorType
@@ -15,6 +16,13 @@ import kotlinx.coroutines.flow.Flow
  * methods of [TracksRepository] will always return [SearchResult.TrackSearchResult]
  * in the case of a successful fetch operation.
  */
+
+data class PlaylistQuery(
+    override val page: Page,
+    val id: String,
+    val countryCode: String,
+): PagedQuery
+
 interface TracksRepository {
     suspend fun fetchTopTenTracksForArtistWithId(
         artistId: String,
@@ -31,8 +39,7 @@ interface TracksRepository {
         countryCode: String
     ): FetchedResource<List<SearchResult.TrackSearchResult>, MusifyErrorType>
 
-    fun getPaginatedStreamForPlaylistTracks(
-        playlistId: String,
-        countryCode: String,
-    ): Flow<PagingData<SearchResult.TrackSearchResult>>
+    fun playListsFor(
+        playListQuery: PlaylistQuery
+    ): Flow<List<SearchResult.TrackSearchResult>>
 }

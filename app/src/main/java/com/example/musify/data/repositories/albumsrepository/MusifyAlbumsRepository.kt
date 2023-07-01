@@ -1,10 +1,8 @@
 package com.example.musify.data.repositories.albumsrepository
 
-import androidx.paging.Pager
 import androidx.paging.PagingConfig
-import androidx.paging.PagingData
-import com.example.musify.data.paging.AlbumsOfArtistPagingSource
 import com.example.musify.data.remote.musicservice.SpotifyService
+import com.example.musify.data.remote.response.AlbumMetadataResponse
 import com.example.musify.data.remote.response.toAlbumSearchResult
 import com.example.musify.data.remote.response.toAlbumSearchResultList
 import com.example.musify.data.repositories.tokenrepository.TokenRepository
@@ -13,6 +11,7 @@ import com.example.musify.data.utils.FetchedResource
 import com.example.musify.domain.MusifyErrorType
 import com.example.musify.domain.SearchResult
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
 import javax.inject.Inject
 
 class MusifyAlbumsRepository @Inject constructor(
@@ -41,15 +40,19 @@ class MusifyAlbumsRepository @Inject constructor(
             spotifyService.getAlbumWithId(albumId, countryCode, it).toAlbumSearchResult()
         }
 
-    override fun getPaginatedStreamForAlbumsOfArtist(
-        artistId: String,
-        countryCode: String
-    ): Flow<PagingData<SearchResult.AlbumSearchResult>> = Pager(pagingConfig) {
-        AlbumsOfArtistPagingSource(
-            artistId = artistId,
-            market = countryCode,
-            tokenRepository = tokenRepository,
-            spotifyService = spotifyService
+    override fun albumsFor(
+        query: ArtistAlbumsQuery
+    ): Flow<List<SearchResult.AlbumSearchResult>> = flow {
+        emit(
+            spotifyService.getAlbumsOfArtistWithId(
+                artistId = query.artistId,
+                market = query.countryCode,
+                token = tokenRepository.getValidBearerToken(),
+                limit = query.page.limit,
+                offset = query.page.offset,
+            )
+                .items
+                .map(AlbumMetadataResponse::toAlbumSearchResult)
         )
-    }.flow
+    }
 }
