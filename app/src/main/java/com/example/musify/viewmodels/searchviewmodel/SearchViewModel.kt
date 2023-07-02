@@ -12,25 +12,20 @@ import com.example.musify.data.repositories.searchrepository.SearchRepository
 import com.example.musify.data.repositories.searchrepository.itemsFor
 import com.example.musify.data.tiling.Page
 import com.example.musify.data.tiling.toTiledList
-import com.example.musify.di.IODispatcher
 import com.example.musify.domain.SearchResult
 import com.example.musify.domain.SearchResults
 import com.example.musify.usecases.getCurrentlyPlayingTrackUseCase.GetCurrentlyPlayingTrackUseCase
-import com.example.musify.usecases.getPlaybackLoadingStatusUseCase.GetPlaybackLoadingStatusUseCase
 import com.example.musify.viewmodels.getCountryCode
 import com.tunjid.tiler.TiledList
 import com.tunjid.tiler.emptyTiledList
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.emptyFlow
-import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
 import javax.inject.Inject
 
@@ -44,14 +39,9 @@ enum class SearchScreenUiState { LOADING, IDLE }
 class SearchViewModel @Inject constructor(
     application: Application,
     getCurrentlyPlayingTrackUseCase: GetCurrentlyPlayingTrackUseCase,
-    getPlaybackLoadingStatusUseCase: GetPlaybackLoadingStatusUseCase,
-    @IODispatcher private val ioDispatcher: CoroutineDispatcher,
-    private val genresRepository: GenresRepository,
-    private val searchRepository: SearchRepository
+    searchRepository: SearchRepository,
+    private val genresRepository: GenresRepository
 ) : AndroidViewModel(application) {
-
-    private val _uiState = mutableStateOf(SearchScreenUiState.IDLE)
-    val uiState = _uiState as State<SearchScreenUiState>
 
     private val albumsQuery = SearchQueryType.ALBUM.contentFlow(
         countryCode = getCountryCode(),
@@ -116,22 +106,6 @@ class SearchViewModel @Inject constructor(
     val currentlySelectedFilter = _currentlySelectedFilter as State<SearchFilter>
 
     val currentlyPlayingTrackStream = getCurrentlyPlayingTrackUseCase.currentlyPlayingTrackStream
-
-    init {
-        getPlaybackLoadingStatusUseCase
-            .loadingStatusStream
-            .onEach { isPlaybackLoading ->
-                if (isPlaybackLoading && _uiState.value != SearchScreenUiState.LOADING) {
-                    _uiState.value = SearchScreenUiState.LOADING
-                    return@onEach
-                }
-                if (!isPlaybackLoading && _uiState.value == SearchScreenUiState.LOADING) {
-                    _uiState.value = SearchScreenUiState.IDLE
-                    return@onEach
-                }
-            }
-            .launchIn(viewModelScope)
-    }
 
     fun search(searchQuery: String) {
         albumsQuery.value = SearchQueryType.ALBUM.contentQueryFor(

@@ -4,7 +4,11 @@ import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.Box
 import androidx.compose.material.ExperimentalMaterialApi
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
@@ -25,7 +29,6 @@ import com.example.musify.ui.screens.searchscreen.PagingItemsForSearchScreen
 import com.example.musify.ui.screens.searchscreen.SearchScreen
 import com.example.musify.viewmodels.homefeedviewmodel.HomeFeedViewModel
 import com.example.musify.viewmodels.searchviewmodel.SearchFilter
-import com.example.musify.viewmodels.searchviewmodel.SearchScreenUiState
 import com.example.musify.viewmodels.searchviewmodel.SearchViewModel
 
 @ExperimentalAnimationApi
@@ -123,20 +126,13 @@ private fun NavGraphBuilder.searchScreen(
         val podcasts by viewModel.showsTiledList.collectAsState()
         val episodes by viewModel.episodesTiledList.collectAsState()
         val pagingItems = PagingItemsForSearchScreen(
-                albums,
-                artists,
-                tracks,
-                playlists,
-                podcasts,
-                episodes
-            )
-        val uiState by viewModel.uiState
-        val isLoadingError by remember {
-            derivedStateOf {
-//                tracks.loadState.refresh is LoadState.Error || tracks.loadState.append is LoadState.Error || tracks.loadState.prepend is LoadState.
-                false
-            }
-        }
+            albums,
+            artists,
+            tracks,
+            playlists,
+            podcasts,
+            episodes
+        )
         val controller = LocalSoftwareKeyboardController.current
         val genres = remember { viewModel.getAvailableGenres() }
         val filters = remember { SearchFilter.values().toList() }
@@ -166,18 +162,8 @@ private fun NavGraphBuilder.searchScreen(
                 onSearchFilterChanged = viewModel::updateSearchFilter,
                 onGenreItemClick = {},
                 onSearchTextChanged = viewModel::search,
-                isLoading = uiState == SearchScreenUiState.LOADING,
                 onSearchQueryItemClicked = onSearchResultClicked,
                 onImeDoneButtonClicked = {
-                    // Search only if there was an error while loading.
-                    // A manual call to search() is not required
-                    // when there is no error because, search()
-                    // will be called automatically, everytime the
-                    // search text changes. This prevents duplicate
-                    // calls when the user manually clicks the done
-                    // button after typing the search text, in
-                    // which case, the keyboard will just be hidden.
-                    if (isLoadingError) viewModel.search(it)
                     controller?.hide()
                 },
                 isFullScreenNowPlayingOverlayScreenVisible = isFullScreenNowPlayingScreenOverlayVisible

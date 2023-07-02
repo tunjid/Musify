@@ -18,7 +18,6 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusState
 import androidx.compose.ui.focus.onFocusChanged
@@ -68,7 +67,6 @@ fun SearchScreen(
     onSearchFilterChanged: (SearchFilter) -> Unit,
     onGenreItemClick: (Genre) -> Unit,
     onSearchTextChanged: (searchText: String) -> Unit,
-    isLoading: Boolean,
     onSearchQueryItemClicked: (SearchResult) -> Unit,
     onImeDoneButtonClicked: KeyboardActionScope.(searchText: String) -> Unit,
     isFullScreenNowPlayingOverlayScreenVisible: Boolean
@@ -151,7 +149,6 @@ fun SearchScreen(
                     SearchQueryList(
                         pagingItems = pagingItems,
                         onItemClick = { onSearchQueryItemClicked(it) },
-                        isSearchResultsLoadingAnimationVisible = isLoading,
                         currentlyPlayingTrack = currentlyPlayingTrack,
                         onQueryChanged = onQueryChanged,
                         currentlySelectedFilter = SearchFilter.values()[page],
@@ -180,7 +177,6 @@ private fun SearchQueryList(
     currentlySelectedFilter: SearchFilter,
     currentlyPlayingTrack: SearchResult.TrackSearchResult?,
     lazyListState: LazyListState = rememberLazyListState(),
-    isSearchResultsLoadingAnimationVisible: Boolean = false,
 ) {
     val artistImageErrorPainter =
         rememberVectorPainter(ImageVector.vectorResource(id = R.drawable.ic_outline_account_circle_24))
@@ -234,21 +230,6 @@ private fun SearchQueryList(
             }
         }
 
-        val musifyLoadingAnimationModifier = if (WindowInsets.isImeVisible) {
-            Modifier
-                .align(Alignment.Center)
-                .imePadding()
-        } else {
-            Modifier
-                .align(Alignment.Center)
-                .padding(
-                    bottom = MusifyMiniPlayerConstants.miniPlayerHeight + MusifyBottomNavigationConstants.navigationHeight
-                )
-        }
-        DefaultMusifyLoadingAnimation(
-            modifier = musifyLoadingAnimationModifier,
-            isVisible = isSearchResultsLoadingAnimationVisible
-        )
         lazyListState.PivotedTilingEffect(
             items = when (currentlySelectedFilter) {
                 SearchFilter.ALBUMS -> pagingItems.albumListForSearchQuery
