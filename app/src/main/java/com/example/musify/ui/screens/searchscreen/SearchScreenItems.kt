@@ -19,7 +19,6 @@ import androidx.compose.foundation.lazy.LazyItemScope
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.MaterialTheme
@@ -74,11 +73,11 @@ fun SearchTrackListItems(
     itemsFlow = tracksListForSearchQuery,
     onQueryChanged = onQueryChanged
 ) { items ->
-    itemsIndexedWithEmptyListContent(
+    itemsWithEmptyListContent(
         items = items,
         cardType = ListItemCardType.TRACK,
-        key = { index, track -> "$index${track.id}" }
-    ) { _, track ->
+        key = SearchResult.TrackSearchResult::id
+    ) { track ->
         MusifyCompactTrackCard(
             backgroundColor = CardBackgroundColor,
             shape = CardShape,
@@ -101,11 +100,11 @@ fun SearchAlbumListItems(
     itemsFlow = albumListForSearchQuery,
     onQueryChanged = onQueryChanged
 ) { items ->
-    itemsIndexedWithEmptyListContent(
+    itemsWithEmptyListContent(
         items = items,
         cardType = ListItemCardType.ALBUM,
-        key = { index, album -> "$index${album.id}" }
-    ) { _, album ->
+        key = SearchResult.AlbumSearchResult::id
+    ) { album ->
         MusifyCompactListItemCard(
             backgroundColor = CardBackgroundColor,
             shape = CardShape,
@@ -133,11 +132,11 @@ fun SearchArtistListItems(
     itemsFlow = artistListForSearchQuery,
     onQueryChanged = onQueryChanged
 ) { items ->
-    itemsIndexedWithEmptyListContent(
+    itemsWithEmptyListContent(
         items = items,
         cardType = ListItemCardType.PLAYLIST,
-        key = { index, artist -> "$index${artist.id}" }
-    ) { _, artist ->
+        key = SearchResult.ArtistSearchResult::id
+    ) { artist ->
         MusifyCompactListItemCard(
             backgroundColor = CardBackgroundColor,
             shape = CardShape,
@@ -166,11 +165,11 @@ fun SearchPlaylistListItems(
     itemsFlow = playlistListForSearchQuery,
     onQueryChanged = onQueryChanged
 ) { items ->
-    itemsIndexedWithEmptyListContent(
+    itemsWithEmptyListContent(
         items = items,
         cardType = ListItemCardType.PLAYLIST,
-        key = { index, playlist -> "$index${playlist.id}" }
-    ) { _, playlist ->
+        key = SearchResult.PlaylistSearchResult::id
+    ) { playlist ->
         MusifyCompactListItemCard(
             backgroundColor = CardBackgroundColor,
             shape = CardShape,
@@ -226,7 +225,8 @@ fun SearchPodcastListItems(
                 contentPadding = PaddingValues(horizontal = 16.dp)
             ) {
                 items(
-                    items = podcasts
+                    items = podcasts,
+                    key = SearchResult.PodcastSearchResult::id
                 ) { podcast ->
                     PodcastCard(
                         podcastArtUrlString = podcast.imageUrlString,
@@ -237,7 +237,7 @@ fun SearchPodcastListItems(
                 }
             }
         }
-        itemsIndexedWithEmptyListContent(items) { _, episode ->
+        itemsWithEmptyListContent(items) { episode ->
             EpisodeListCard(
                 episodeSearchResult = episode,
                 onClick = { onEpisodeItemClicked(episode) }
@@ -246,10 +246,10 @@ fun SearchPodcastListItems(
     }
 }
 
-private fun <T : Any> LazyListScope.itemsIndexedWithEmptyListContent(
+private fun <T : Any> LazyListScope.itemsWithEmptyListContent(
     items: TiledList<ContentQuery, T>,
     cardType: ListItemCardType? = null,
-    key: ((index: Int, item: T) -> Any)? = null,
+    key: ((item: T) -> Any)? = null,
     emptyListContent: @Composable LazyItemScope.() -> Unit = {
         val title = remember(cardType) {
             "Couldn't find " +
@@ -272,9 +272,9 @@ private fun <T : Any> LazyListScope.itemsIndexedWithEmptyListContent(
                 .windowInsetsPadding(WindowInsets.ime)
         )
     },
-    itemContent: @Composable LazyItemScope.(index: Int, value: T) -> Unit
+    itemContent: @Composable LazyItemScope.(value: T) -> Unit
 ) {
-    itemsIndexed(
+    items(
         items = items,
         key = key,
         itemContent = itemContent
@@ -326,6 +326,7 @@ private fun <Item> TiledLazyColumn(
     lazyListState.PivotedTilingEffect(
         items = items,
         onQueryChanged = { query ->
+            if (query != null) println("Q: ${query.page.offset}")
             if (query != null) onQueryChanged(query)
         }
     )

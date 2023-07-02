@@ -18,6 +18,7 @@ import com.example.musify.domain.SearchResults
 import com.example.musify.usecases.getCurrentlyPlayingTrackUseCase.GetCurrentlyPlayingTrackUseCase
 import com.example.musify.viewmodels.getCountryCode
 import com.tunjid.tiler.TiledList
+import com.tunjid.tiler.distinctBy
 import com.tunjid.tiler.emptyTiledList
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CoroutineScope
@@ -29,12 +30,6 @@ import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import javax.inject.Inject
-
-/**
- * An enum class that contains the different ui states associated with
- * the [SearchViewModel].
- */
-enum class SearchScreenUiState { LOADING, IDLE }
 
 @HiltViewModel
 class SearchViewModel @Inject constructor(
@@ -55,49 +50,55 @@ class SearchViewModel @Inject constructor(
     private val albumsQuery = SearchQueryType.ALBUM.contentFlow(
         countryCode = getCountryCode(),
     )
-    val albumsTiledList = albumsQuery.toTiledList<SearchResult.AlbumSearchResult>(
-        searchRepository = searchRepository,
+    val albumsTiledList = albumsQuery.toTiledList(
         scope = viewModelScope,
+        searchRepository = searchRepository,
+        idFunction = SearchResult.AlbumSearchResult::id
     )
 
     private val artistsQuery = SearchQueryType.ARTIST.contentFlow(
         countryCode = getCountryCode(),
     )
-    val artistsTiledList = artistsQuery.toTiledList<SearchResult.ArtistSearchResult>(
-        searchRepository = searchRepository,
+    val artistsTiledList = artistsQuery.toTiledList(
         scope = viewModelScope,
+        searchRepository = searchRepository,
+        idFunction = SearchResult.ArtistSearchResult::id
     )
 
     private val episodesQuery = SearchQueryType.EPISODE.contentFlow(
         countryCode = getCountryCode(),
     )
-    val episodesTiledList = episodesQuery.toTiledList<SearchResult.EpisodeSearchResult>(
-        searchRepository = searchRepository,
+    val episodesTiledList = episodesQuery.toTiledList(
         scope = viewModelScope,
+        searchRepository = searchRepository,
+        idFunction = SearchResult.EpisodeSearchResult::id
     )
 
     private val playlistsQuery = SearchQueryType.PLAYLIST.contentFlow(
         countryCode = getCountryCode(),
     )
-    val playlistsTiledList = playlistsQuery.toTiledList<SearchResult.PlaylistSearchResult>(
-        searchRepository = searchRepository,
+    val playlistsTiledList = playlistsQuery.toTiledList(
         scope = viewModelScope,
+        searchRepository = searchRepository,
+        idFunction = SearchResult.PlaylistSearchResult::id
     )
 
     private val showsQuery = SearchQueryType.SHOW.contentFlow(
         countryCode = getCountryCode(),
     )
-    val showsTiledList = showsQuery.toTiledList<SearchResult.PodcastSearchResult>(
-        searchRepository = searchRepository,
+    val showsTiledList = showsQuery.toTiledList(
         scope = viewModelScope,
+        searchRepository = searchRepository,
+        idFunction = SearchResult.PodcastSearchResult::id
     )
 
     private val tracksQuery = SearchQueryType.TRACK.contentFlow(
         countryCode = getCountryCode(),
     )
-    val trackTiledList = tracksQuery.toTiledList<SearchResult.TrackSearchResult>(
-        searchRepository = searchRepository,
+    val trackTiledList = tracksQuery.toTiledList(
         scope = viewModelScope,
+        searchRepository = searchRepository,
+        idFunction = SearchResult.TrackSearchResult::id
     )
 
     val onContentQueryChanged = { query: ContentQuery ->
@@ -169,8 +170,9 @@ class SearchViewModel @Inject constructor(
     )
 
     private inline fun <reified T : SearchResult> MutableStateFlow<ContentQuery>.toTiledList(
-        searchRepository: SearchRepository,
         scope: CoroutineScope,
+        searchRepository: SearchRepository,
+        crossinline idFunction: (T) -> Any
     ): StateFlow<TiledList<ContentQuery, T>> =
         debounce {
             if (it.searchQuery.length < 2) 0
@@ -184,6 +186,7 @@ class SearchViewModel @Inject constructor(
                     .map<SearchResults, List<T>>(SearchResults::itemsFor)
             }
         )
+            .map { it.distinctBy(idFunction) }
             .stateIn(
                 scope = scope,
                 started = SharingStarted.WhileSubscribed(5_000),
