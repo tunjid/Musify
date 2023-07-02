@@ -52,7 +52,9 @@ fun <Query : PagedQuery, Item> Flow<Query>.toTiledList(
                         .retry(retries = 10) { e ->
                             e.printStackTrace()
                             // retry on any IOException but also introduce delay if retrying
-                            (e is IOException).also { if (it) delay(1000) }
+                            val shouldRetry = e is IOException
+                            if (shouldRetry) delay(1000)
+                            shouldRetry
                         }
                         .catch { emit(emptyTiledList<Query, Item>()) }
                 }
@@ -62,7 +64,7 @@ fun <Query : PagedQuery, Item> Flow<Query>.toTiledList(
 private fun <T : PagedQuery, R> pivotRequest(
     queryFor: T.(Page) -> T
 ) = PivotRequest<T, R>(
-    onCount = 3,
+    onCount = 5,
     offCount = 4,
     comparator = compareBy { it.page.offset },
     nextQuery = {
