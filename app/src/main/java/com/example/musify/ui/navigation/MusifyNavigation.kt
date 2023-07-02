@@ -25,7 +25,7 @@ import com.example.musify.ui.dynamicTheme.dynamicbackgroundmodifier.DynamicBackg
 import com.example.musify.ui.dynamicTheme.dynamicbackgroundmodifier.dynamicBackground
 import com.example.musify.ui.screens.GetPremiumScreen
 import com.example.musify.ui.screens.homescreen.HomeScreen
-import com.example.musify.ui.screens.searchscreen.PagingItemsForSearchScreen
+import com.example.musify.ui.screens.searchscreen.TiledListFlowsForSearchScreen
 import com.example.musify.ui.screens.searchscreen.SearchScreen
 import com.example.musify.viewmodels.homefeedviewmodel.HomeFeedViewModel
 import com.example.musify.viewmodels.searchviewmodel.SearchFilter
@@ -119,20 +119,17 @@ private fun NavGraphBuilder.searchScreen(
 ) {
     composable(route = route) {
         val viewModel = hiltViewModel<SearchViewModel>()
-        val albums by viewModel.albumsTiledList.collectAsState()
-        val artists by viewModel.artistsTiledList.collectAsState()
-        val playlists by viewModel.playlistsTiledList.collectAsState()
-        val tracks by viewModel.tracksTiledList.collectAsState()
-        val podcasts by viewModel.showsTiledList.collectAsState()
-        val episodes by viewModel.episodesTiledList.collectAsState()
-        val pagingItems = PagingItemsForSearchScreen(
-            albums,
-            artists,
-            tracks,
-            playlists,
-            podcasts,
-            episodes
-        )
+        val tiledItems = remember {
+            TiledListFlowsForSearchScreen(
+                albumTiledListFlow = viewModel.albumsTiledList,
+                artistTiledListFLow = viewModel.artistsTiledList,
+                trackTiledListFlow = viewModel.trackTiledList,
+                playlistTiledListFlow = viewModel.playlistsTiledList,
+                podcastTiledListFlow = viewModel.showsTiledList,
+                episodeTiledListFlow = viewModel.episodesTiledList
+            )
+        }
+        val isOnline by viewModel.isOnline.collectAsState()
         val controller = LocalSoftwareKeyboardController.current
         val genres = remember { viewModel.getAvailableGenres() }
         val filters = remember { SearchFilter.values().toList() }
@@ -140,11 +137,11 @@ private fun NavGraphBuilder.searchScreen(
         val dynamicBackgroundResource by remember {
             derivedStateOf {
                 val imageUrl = when (currentlySelectedFilter) {
-                    SearchFilter.ALBUMS -> albums.firstOrNull()?.albumArtUrlString
-                    SearchFilter.TRACKS -> tracks.firstOrNull()?.imageUrlString
-                    SearchFilter.ARTISTS -> artists.firstOrNull()?.imageUrlString
-                    SearchFilter.PLAYLISTS -> playlists.firstOrNull()?.imageUrlString
-                    SearchFilter.PODCASTS -> podcasts.firstOrNull()?.imageUrlString
+                    SearchFilter.ALBUMS -> tiledItems.albumTiledListFlow.value.firstOrNull()?.albumArtUrlString
+                    SearchFilter.TRACKS -> tiledItems.trackTiledListFlow.value.firstOrNull()?.imageUrlString
+                    SearchFilter.ARTISTS -> tiledItems.artistTiledListFLow.value.firstOrNull()?.imageUrlString
+                    SearchFilter.PLAYLISTS -> tiledItems.playlistTiledListFlow.value.firstOrNull()?.imageUrlString
+                    SearchFilter.PODCASTS -> tiledItems.podcastTiledListFlow.value.firstOrNull()?.imageUrlString
                 }
                 if (imageUrl == null) DynamicBackgroundResource.Empty
                 else DynamicBackgroundResource.FromImageUrl(imageUrl)
@@ -153,9 +150,10 @@ private fun NavGraphBuilder.searchScreen(
         val currentlyPlayingTrack by viewModel.currentlyPlayingTrackStream.collectAsState(initial = null)
         Box(modifier = Modifier.dynamicBackground(dynamicBackgroundResource)) {
             SearchScreen(
+                isOnline = isOnline,
                 genreList = genres,
                 searchScreenFilters = filters,
-                pagingItems = pagingItems,
+                tiledListFlows = tiledItems,
                 currentlyPlayingTrack = currentlyPlayingTrack,
                 currentlySelectedFilter = viewModel.currentlySelectedFilter.value,
                 onQueryChanged = viewModel.onContentQueryChanged,

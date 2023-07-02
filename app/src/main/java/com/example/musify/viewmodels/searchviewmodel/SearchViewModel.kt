@@ -12,6 +12,7 @@ import com.example.musify.data.repositories.searchrepository.SearchRepository
 import com.example.musify.data.repositories.searchrepository.itemsFor
 import com.example.musify.data.tiling.Page
 import com.example.musify.data.tiling.toTiledList
+import com.example.musify.data.utils.NetworkMonitor
 import com.example.musify.domain.SearchResult
 import com.example.musify.domain.SearchResults
 import com.example.musify.usecases.getCurrentlyPlayingTrackUseCase.GetCurrentlyPlayingTrackUseCase
@@ -40,8 +41,16 @@ class SearchViewModel @Inject constructor(
     application: Application,
     getCurrentlyPlayingTrackUseCase: GetCurrentlyPlayingTrackUseCase,
     searchRepository: SearchRepository,
+    networkMonitor: NetworkMonitor,
     private val genresRepository: GenresRepository
 ) : AndroidViewModel(application) {
+
+    val isOnline = networkMonitor.isOnline
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5_000),
+            initialValue = true,
+        )
 
     private val albumsQuery = SearchQueryType.ALBUM.contentFlow(
         countryCode = getCountryCode(),
@@ -86,7 +95,7 @@ class SearchViewModel @Inject constructor(
     private val tracksQuery = SearchQueryType.TRACK.contentFlow(
         countryCode = getCountryCode(),
     )
-    val tracksTiledList = tracksQuery.toTiledList<SearchResult.TrackSearchResult>(
+    val trackTiledList = tracksQuery.toTiledList<SearchResult.TrackSearchResult>(
         searchRepository = searchRepository,
         scope = viewModelScope,
     )
@@ -150,7 +159,7 @@ class SearchViewModel @Inject constructor(
         countryCode = countryCode
     )
 
-    private inline fun SearchQueryType.contentFlow(
+    private fun SearchQueryType.contentFlow(
         countryCode: String
     ) = MutableStateFlow(
         contentQueryFor(

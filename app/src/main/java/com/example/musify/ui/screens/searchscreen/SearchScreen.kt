@@ -5,9 +5,6 @@ import androidx.compose.animation.*
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.text.KeyboardActionScope
@@ -36,19 +33,19 @@ import com.example.musify.domain.SearchResult
 import com.example.musify.ui.components.*
 import com.example.musify.viewmodels.searchviewmodel.SearchFilter
 import com.tunjid.tiler.TiledList
-import com.tunjid.tiler.compose.PivotedTilingEffect
+import kotlinx.coroutines.flow.StateFlow
 
 /**
  * A data class that contains all the different paging items associated
  * with the[SearchScreen].
  */
-data class PagingItemsForSearchScreen(
-    val albumListForSearchQuery: TiledList<ContentQuery, SearchResult.AlbumSearchResult>,
-    val artistListForSearchQuery: TiledList<ContentQuery, SearchResult.ArtistSearchResult>,
-    val tracksListForSearchQuery: TiledList<ContentQuery, SearchResult.TrackSearchResult>,
-    val playlistListForSearchQuery: TiledList<ContentQuery, SearchResult.PlaylistSearchResult>,
-    val podcastListForSearchQuery: TiledList<ContentQuery, SearchResult.PodcastSearchResult>,
-    val episodeListForSearchQuery: TiledList<ContentQuery, SearchResult.EpisodeSearchResult>
+data class TiledListFlowsForSearchScreen(
+    val albumTiledListFlow: StateFlow<TiledList<ContentQuery, SearchResult.AlbumSearchResult>>,
+    val artistTiledListFLow: StateFlow<TiledList<ContentQuery, SearchResult.ArtistSearchResult>>,
+    val trackTiledListFlow: StateFlow<TiledList<ContentQuery, SearchResult.TrackSearchResult>>,
+    val playlistTiledListFlow: StateFlow<TiledList<ContentQuery, SearchResult.PlaylistSearchResult>>,
+    val podcastTiledListFlow: StateFlow<TiledList<ContentQuery, SearchResult.PodcastSearchResult>>,
+    val episodeTiledListFlow: StateFlow<TiledList<ContentQuery, SearchResult.EpisodeSearchResult>>,
 )
 
 // fix lazy list scrolling to top after config change
@@ -58,9 +55,10 @@ data class PagingItemsForSearchScreen(
 @Composable
 @OptIn(ExperimentalLayoutApi::class)
 fun SearchScreen(
+    isOnline: Boolean,
     genreList: List<Genre>,
     searchScreenFilters: List<SearchFilter>,
-    pagingItems: PagingItemsForSearchScreen,
+    tiledListFlows: TiledListFlowsForSearchScreen,
     currentlyPlayingTrack: SearchResult.TrackSearchResult?,
     currentlySelectedFilter: SearchFilter,
     onQueryChanged: (ContentQuery) -> Unit,
@@ -144,10 +142,12 @@ fun SearchScreen(
             when (targetState) {
                 true -> HorizontalPager(
                     pageCount = SearchFilter.values().size,
-                    state = pagerState
+                    state = pagerState,
+                    beyondBoundsPageCount = 1,
                 ) { page ->
                     SearchQueryList(
-                        pagingItems = pagingItems,
+                        isOnline = isOnline,
+                        tiledListFlows = tiledListFlows,
                         onItemClick = { onSearchQueryItemClicked(it) },
                         currentlyPlayingTrack = currentlyPlayingTrack,
                         onQueryChanged = onQueryChanged,
@@ -171,12 +171,12 @@ fun SearchScreen(
 @ExperimentalMaterialApi
 @Composable
 private fun SearchQueryList(
-    pagingItems: PagingItemsForSearchScreen,
+    isOnline: Boolean,
+    tiledListFlows: TiledListFlowsForSearchScreen,
     onItemClick: (SearchResult) -> Unit,
     onQueryChanged: (ContentQuery) -> Unit,
     currentlySelectedFilter: SearchFilter,
     currentlyPlayingTrack: SearchResult.TrackSearchResult?,
-    lazyListState: LazyListState = rememberLazyListState(),
 ) {
     val artistImageErrorPainter =
         rememberVectorPainter(ImageVector.vectorResource(id = R.drawable.ic_outline_account_circle_24))
@@ -184,64 +184,47 @@ private fun SearchQueryList(
         rememberVectorPainter(image = ImageVector.vectorResource(id = R.drawable.ic_outline_music_note_24))
 
     Box(modifier = Modifier.fillMaxSize()) {
+        when (currentlySelectedFilter) {
+            SearchFilter.ALBUMS -> SearchAlbumListItems(
+                isOnline = isOnline,
+                albumListForSearchQuery = tiledListFlows.albumTiledListFlow,
+                onQueryChanged = onQueryChanged,
+                onItemClick = onItemClick,
+            )
 
-        LazyColumn(
-            modifier = Modifier
-                .background(MaterialTheme.colors.background.copy(alpha = 0.7f))
-                .fillMaxSize(),
-            state = lazyListState,
-            contentPadding = PaddingValues(
-                bottom = MusifyBottomNavigationConstants.navigationHeight + MusifyMiniPlayerConstants.miniPlayerHeight
-            ),
-        ) {
-            when (currentlySelectedFilter) {
-                SearchFilter.ALBUMS -> searchAlbumListItems(
-                    albumListForSearchQuery = pagingItems.albumListForSearchQuery,
-                    onItemClick = onItemClick,
-                )
+            SearchFilter.TRACKS -> SearchTrackListItems(
+                isOnline = isOnline,
+                tracksListForSearchQuery = tiledListFlows.trackTiledListFlow,
+                onItemClick = onItemClick,
+                onQueryChanged = onQueryChanged,
+                currentlyPlayingTrack = currentlyPlayingTrack
+            )
 
-                SearchFilter.TRACKS -> searchTrackListItems(
-                    tracksListForSearchQuery = pagingItems.tracksListForSearchQuery,
-                    onItemClick = onItemClick,
-                    currentlyPlayingTrack = currentlyPlayingTrack
-                )
+            SearchFilter.ARTISTS -> SearchArtistListItems(
+                isOnline = isOnline,
+                artistListForSearchQuery = tiledListFlows.artistTiledListFLow,
+                onItemClick = onItemClick,
+                onQueryChanged = onQueryChanged,
+                artistImageErrorPainter = artistImageErrorPainter
+            )
 
-                SearchFilter.ARTISTS -> searchArtistListItems(
-                    artistListForSearchQuery = pagingItems.artistListForSearchQuery,
-                    onItemClick = onItemClick,
-                    artistImageErrorPainter = artistImageErrorPainter
-                )
+            SearchFilter.PLAYLISTS -> SearchPlaylistListItems(
+                isOnline = isOnline,
+                playlistListForSearchQuery = tiledListFlows.playlistTiledListFlow,
+                onItemClick = onItemClick,
+                onQueryChanged = onQueryChanged,
+                playlistImageErrorPainter = playlistImageErrorPainter
+            )
 
-                SearchFilter.PLAYLISTS -> searchPlaylistListItems(
-                    playlistListForSearchQuery = pagingItems.playlistListForSearchQuery,
-                    onItemClick = onItemClick,
-                    playlistImageErrorPainter = playlistImageErrorPainter
-                )
-
-                SearchFilter.PODCASTS -> searchPodcastListItems(
-                    podcastsForSearchQuery = pagingItems.podcastListForSearchQuery,
-                    episodesForSearchQuery = pagingItems.episodeListForSearchQuery,
-                    onPodcastItemClicked = onItemClick,
-                    onEpisodeItemClicked = onItemClick
-                )
-            }
-            item {
-                Spacer(modifier = Modifier.windowInsetsBottomHeight(WindowInsets.navigationBars))
-            }
+            SearchFilter.PODCASTS -> SearchPodcastListItems(
+                isOnline = isOnline,
+                podcastsForSearchQuery = tiledListFlows.podcastTiledListFlow,
+                episodesForSearchQuery = tiledListFlows.episodeTiledListFlow,
+                onQueryChanged = onQueryChanged,
+                onPodcastItemClicked = onItemClick,
+                onEpisodeItemClicked = onItemClick,
+            )
         }
-
-        lazyListState.PivotedTilingEffect(
-            items = when (currentlySelectedFilter) {
-                SearchFilter.ALBUMS -> pagingItems.albumListForSearchQuery
-                SearchFilter.TRACKS -> pagingItems.tracksListForSearchQuery
-                SearchFilter.ARTISTS -> pagingItems.artistListForSearchQuery
-                SearchFilter.PLAYLISTS -> pagingItems.playlistListForSearchQuery
-                SearchFilter.PODCASTS -> pagingItems.podcastListForSearchQuery
-            },
-            onQueryChanged = {
-                it?.let(onQueryChanged)
-            }
-        )
     }
 }
 
