@@ -299,7 +299,7 @@ private fun <Item> TiledLazyColumn(
 ) {
     val lazyListState = rememberLazyListState()
     val items by itemsFlow.collectAsState()
-    Box {
+    Box(modifier = Modifier.fillMaxSize()) {
         if (items.isEmpty() && !isOnline) DefaultMusifyErrorMessage(
             title = "Oops! Something doesn't look right",
             subtitle = "Please check the internet connection",
