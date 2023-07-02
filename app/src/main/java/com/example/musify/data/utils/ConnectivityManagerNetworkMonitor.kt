@@ -9,14 +9,17 @@ import android.net.NetworkRequest
 import android.net.NetworkRequest.Builder
 import androidx.core.content.getSystemService
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.callbackFlow
-import kotlinx.coroutines.flow.conflate
+import kotlinx.coroutines.flow.stateIn
 import javax.inject.Inject
 
 class ConnectivityManagerNetworkMonitor @Inject constructor(
     @ApplicationContext private val context: Context,
+    appScope: CoroutineScope
 ) : NetworkMonitor {
     override val isOnline: Flow<Boolean> = callbackFlow {
         val connectivityManager = context.getSystemService<ConnectivityManager>()
@@ -59,7 +62,12 @@ class ConnectivityManagerNetworkMonitor @Inject constructor(
             connectivityManager.unregisterNetworkCallback(callback)
         }
     }
-        .conflate()
+        .stateIn(
+            scope = appScope,
+            started = SharingStarted.WhileSubscribed(5_000),
+            initialValue = context.getSystemService<ConnectivityManager>()
+                ?.isCurrentlyConnected() == true
+        )
 
     private fun ConnectivityManager.isCurrentlyConnected() =
         activeNetwork
