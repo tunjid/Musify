@@ -178,11 +178,6 @@ private fun SearchQueryList(
     currentlySelectedFilter: SearchFilter,
     currentlyPlayingTrack: SearchResult.TrackSearchResult?,
 ) {
-    val artistImageErrorPainter =
-        rememberVectorPainter(ImageVector.vectorResource(id = R.drawable.ic_outline_account_circle_24))
-    val playlistImageErrorPainter =
-        rememberVectorPainter(image = ImageVector.vectorResource(id = R.drawable.ic_outline_music_note_24))
-
     Box(modifier = Modifier.fillMaxSize()) {
         when (currentlySelectedFilter) {
             SearchFilter.ALBUMS -> SearchAlbumListItems(
@@ -205,7 +200,9 @@ private fun SearchQueryList(
                 artistListForSearchQuery = tiledListFlows.artistTiledListFLow,
                 onItemClick = onItemClick,
                 onQueryChanged = onQueryChanged,
-                artistImageErrorPainter = artistImageErrorPainter
+                artistImageErrorPainter = rememberVectorPainter(
+                    ImageVector.vectorResource(id = R.drawable.ic_outline_account_circle_24)
+                )
             )
 
             SearchFilter.PLAYLISTS -> SearchPlaylistListItems(
@@ -213,7 +210,9 @@ private fun SearchQueryList(
                 playlistListForSearchQuery = tiledListFlows.playlistTiledListFlow,
                 onItemClick = onItemClick,
                 onQueryChanged = onQueryChanged,
-                playlistImageErrorPainter = playlistImageErrorPainter
+                playlistImageErrorPainter = rememberVectorPainter(
+                    image = ImageVector.vectorResource(id = R.drawable.ic_outline_music_note_24)
+                )
             )
 
             SearchFilter.PODCASTS -> SearchPodcastListItems(
