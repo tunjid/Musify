@@ -132,7 +132,10 @@ fun PodcastShowDetailScreen(
                 )
                 Spacer(modifier = Modifier.size(8.dp))
             }
-            items(episodes) { episode ->
+            items(
+                items = episodes,
+                key = PodcastEpisode::id
+            ) { episode ->
                 StreamableEpisodeCard(
                     episode = episode,
                     isEpisodePlaying = currentlyPlayingEpisode.equalsIgnoringImageSize(episode) && isCurrentlyPlayingEpisodePaused == false,

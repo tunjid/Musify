@@ -16,11 +16,13 @@ import com.example.musify.domain.PodcastEpisode
 import com.example.musify.domain.PodcastShow
 import com.example.musify.ui.navigation.MusifyNavigationDestinations
 import com.example.musify.usecases.getCurrentlyPlayingEpisodePlaybackStateUseCase.GetCurrentlyPlayingEpisodePlaybackStateUseCase
+import com.tunjid.tiler.distinctBy
 import com.tunjid.tiler.emptyTiledList
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -53,6 +55,7 @@ class PodcastShowDetailViewModel @Inject constructor(
         queryFor = { copy(page = it) },
         fetcher = podcastsRepository::podcastsFor
     )
+        .map { it.distinctBy(PodcastEpisode::id) }
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5_000),

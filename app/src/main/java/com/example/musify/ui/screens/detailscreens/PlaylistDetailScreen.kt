@@ -117,7 +117,10 @@ fun PlaylistDetailScreen(
                     }
                 }
             } else {
-                items(items = tracks) {
+                items(
+                    items = tracks,
+                    key = SearchResult.TrackSearchResult::id
+                ) {
                     MusifyCompactTrackCard(
                         track = it,
                         onClick = onTrackClicked,

@@ -17,11 +17,13 @@ import com.example.musify.ui.navigation.MusifyNavigationDestinations
 import com.example.musify.usecases.getCurrentlyPlayingTrackUseCase.GetCurrentlyPlayingTrackUseCase
 import com.example.musify.usecases.getPlaybackLoadingStatusUseCase.GetPlaybackLoadingStatusUseCase
 import com.example.musify.viewmodels.getCountryCode
+import com.tunjid.tiler.distinctBy
 import com.tunjid.tiler.emptyTiledList
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -70,6 +72,7 @@ class ArtistDetailViewModel @Inject constructor(
         queryFor = { copy(page = it) },
         fetcher = albumsRepository::albumsFor
     )
+        .map { it.distinctBy(SearchResult.AlbumSearchResult::id) }
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5_000),

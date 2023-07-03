@@ -23,6 +23,7 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.windowInsetsBottomHeight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
@@ -157,10 +158,10 @@ fun ArtistDetailScreen(
                     text = "Releases"
                 )
             }
-            itemsIndexed(
+            items(
                 items = releases,
-                key = { index, album -> "$index$album" }
-            ) { _, album ->
+                key = SearchResult.AlbumSearchResult::id
+            ) { album ->
                 MusifyCompactListItemCard(
                     modifier = Modifier
                         .height(80.dp)
