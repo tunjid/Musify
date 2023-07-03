@@ -175,7 +175,8 @@ class SearchViewModel @Inject constructor(
         crossinline idFunction: (T) -> Any
     ): StateFlow<TiledList<ContentQuery, T>> =
         debounce {
-            if (it.searchQuery.length < 2) 0
+            // Don't debounce the If its the first character or more is being loaded
+            if (it.searchQuery.length < 2 || it.page.offset != 0) 0
             else 500
         }.toTiledList(
             startQuery = value,

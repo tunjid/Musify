@@ -137,7 +137,6 @@ fun SearchScreen(
         AnimatedContent(
             targetState = isSearchListVisible,
             transitionSpec = { fadeIn() with fadeOut() },
-            label = ""
         ) { targetState ->
             when (targetState) {
                 true -> HorizontalPager(
