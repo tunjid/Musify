@@ -26,15 +26,18 @@ import com.example.musify.ui.screens.detailscreens.ArtistDetailScreen
 import com.example.musify.ui.screens.detailscreens.PlaylistDetailScreen
 import com.example.musify.ui.screens.detailscreens.PodcastEpisodeDetailScreen
 import com.example.musify.ui.screens.podcastshowdetailscreen.PodcastShowDetailScreen
-import com.example.musify.viewmodels.AlbumDetailUiState
+import com.example.musify.viewmodels.AlbumDetailLoadingState
 import com.example.musify.viewmodels.AlbumDetailViewModel
+import com.example.musify.viewmodels.PlaylistDetailAction
 import com.example.musify.viewmodels.PlaylistDetailViewModel
+import com.example.musify.viewmodels.PodcastEpisodeAction
 import com.example.musify.viewmodels.PodcastEpisodeDetailViewModel
+import com.example.musify.viewmodels.PodcastShowDetailAction
 import com.example.musify.viewmodels.PodcastShowDetailViewModel
-import com.example.musify.viewmodels.artistviewmodel.ArtistDetailScreenUiState
+import com.example.musify.viewmodels.artistviewmodel.ArtistDetailAction
+import com.example.musify.viewmodels.artistviewmodel.ArtistDetailScreenLoadingState
 import com.example.musify.viewmodels.artistviewmodel.ArtistDetailViewModel
-import java.net.URLDecoder
-import java.nio.charset.StandardCharsets
+import com.example.musify.viewmodels.isEpisodeCurrentlyPlaying
 
 /**
  * A nested navigation graph that consists of detail screens.
@@ -136,32 +139,23 @@ private fun NavGraphBuilder.artistDetailScreen(
 ) {
     composable(route, arguments) { backStackEntry ->
         val viewModel = hiltViewModel<ArtistDetailViewModel>(backStackEntry)
-        val arguments = backStackEntry.arguments!!
-        val artistName =
-            arguments.getString(MusifyNavigationDestinations.ArtistDetailScreen.NAV_ARG_ARTIST_NAME)!!
-        val artistImageUrlString =
-            arguments.getString(MusifyNavigationDestinations.ArtistDetailScreen.NAV_ARG_ENCODED_IMAGE_URL_STRING)
-                ?.run { URLDecoder.decode(this, StandardCharsets.UTF_8.toString()) }
-        val releases by viewModel.artistAlbums.collectAsState()
-        val onQueryChanged = remember {
-            viewModel.onQueryChanged
-        }
-        val uiState by viewModel.uiState
-        val currentlyPlayingTrack by viewModel.currentlyPlayingTrackStream.collectAsState(initial = null)
+        val state by viewModel.state.collectAsState()
+        val actions = remember { viewModel.actions }
+
         ArtistDetailScreen(
-            artistName = artistName,
-            artistImageUrlString = artistImageUrlString,
-            popularTracks = viewModel.popularTracks.value,
-            releases = releases,
-            onQueryChanged = onQueryChanged,
-            currentlyPlayingTrack = currentlyPlayingTrack,
+            artistName = state.artistName,
+            artistImageUrlString = state.artistImageUrlString,
+            popularTracks = state.popularTracks,
+            releases = state.releases,
+            onQueryChanged = { actions(ArtistDetailAction.LoadAround(it)) },
+            currentlyPlayingTrack = state.currentlyPlayingTrack,
             onBackButtonClicked = onBackButtonClicked,
             onPlayButtonClicked = {},
             onTrackClicked = onPlayTrack,
             onAlbumClicked = onAlbumClicked,
-            isLoading = uiState is ArtistDetailScreenUiState.Loading,
+            isLoading = state.loadingState is ArtistDetailScreenLoadingState.Loading,
             fallbackImageRes = R.drawable.ic_outline_account_circle_24,
-            isErrorMessageVisible = uiState is ArtistDetailScreenUiState.Error
+            isErrorMessageVisible = state.loadingState is ArtistDetailScreenLoadingState.Error
         )
     }
 }
@@ -172,29 +166,21 @@ private fun NavGraphBuilder.albumDetailScreen(
     onBackButtonClicked: () -> Unit,
     onPlayTrack: (SearchResult.TrackSearchResult) -> Unit
 ) {
-    composable(route) { backStackEntry ->
-        val arguments = backStackEntry.arguments!!
+    composable(route) {
         val viewModel = hiltViewModel<AlbumDetailViewModel>()
-        val albumArtUrl =
-            arguments.getString(MusifyNavigationDestinations.AlbumDetailScreen.NAV_ARG_ENCODED_IMAGE_URL_STRING)!!
-        val albumName =
-            arguments.getString(MusifyNavigationDestinations.AlbumDetailScreen.NAV_ARG_ALBUM_NAME)!!
-        val artists =
-            arguments.getString(MusifyNavigationDestinations.AlbumDetailScreen.NAV_ARG_ARTISTS_STRING)!!
-        val yearOfRelease =
-            arguments.getString(MusifyNavigationDestinations.AlbumDetailScreen.NAV_ARG_YEAR_OF_RELEASE_STRING)!!
-        val currentlyPlayingTrack by viewModel.currentlyPlayingTrackStream.collectAsState(initial = null)
+        val state by viewModel.state.collectAsState()
+
         AlbumDetailScreen(
-            albumName = albumName,
-            artistsString = artists,
-            yearOfRelease = yearOfRelease,
-            albumArtUrlString = albumArtUrl,
-            trackList = viewModel.tracks.value,
+            albumName = state.albumName,
+            artistsString = state.artists,
+            yearOfRelease = state.yearOfRelease,
+            albumArtUrlString = state.albumArtUrl,
+            trackList = state.tracks,
             onTrackItemClick = onPlayTrack,
             onBackButtonClicked = onBackButtonClicked,
-            isLoading = viewModel.uiState.value is AlbumDetailUiState.Loading,
-            isErrorMessageVisible = viewModel.uiState.value is AlbumDetailUiState.Error,
-            currentlyPlayingTrack = currentlyPlayingTrack
+            isLoading = state.loadingState is AlbumDetailLoadingState.Loading,
+            isErrorMessageVisible = state.loadingState is AlbumDetailLoadingState.Error,
+            currentlyPlayingTrack = state.currentlyPlayingTrack
         )
     }
 }
@@ -207,31 +193,19 @@ private fun NavGraphBuilder.playlistDetailScreen(
     navigationArguments: List<NamedNavArgument> = emptyList()
 ) {
     composable(route = route, arguments = navigationArguments) {
-        val arguments = it.arguments!!
         val viewModel = hiltViewModel<PlaylistDetailViewModel>()
-        val tracks by viewModel.tracks.collectAsState()
-        val onQueryChanged = remember {
-            viewModel.onQueryChanged
-        }
-        val playlistName =
-            arguments.getString(MusifyNavigationDestinations.PlaylistDetailScreen.NAV_ARG_PLAYLIST_NAME)!!
-        val imageUrlString =
-            arguments.getString(MusifyNavigationDestinations.PlaylistDetailScreen.NAV_ARG_ENCODED_IMAGE_URL_STRING)!!
-        val ownerName =
-            arguments.getString(MusifyNavigationDestinations.PlaylistDetailScreen.NAV_ARG_OWNER_NAME)!!
-        val totalNumberOfTracks =
-            arguments.getString(MusifyNavigationDestinations.PlaylistDetailScreen.NAV_ARG_NUMBER_OF_TRACKS)!!
+        val state by viewModel.state.collectAsState()
+        val actions = remember { viewModel.actions }
 
-        val currentlyPlayingTrack by viewModel.currentlyPlayingTrackStream.collectAsState(initial = null)
         PlaylistDetailScreen(
-            playlistName = playlistName,
-            playlistImageUrlString = imageUrlString,
-            nameOfPlaylistOwner = ownerName,
-            totalNumberOfTracks = totalNumberOfTracks,
+            playlistName = state.playlistName,
+            playlistImageUrlString = state.imageUrlString,
+            nameOfPlaylistOwner = state.ownerName,
+            totalNumberOfTracks = state.totalNumberOfTracks,
             imageResToUseWhenImageUrlStringIsNull = R.drawable.ic_outline_account_circle_24,
-            tracks = tracks,
-            onQueryChanged = onQueryChanged,
-            currentlyPlayingTrack = currentlyPlayingTrack,
+            tracks = state.tracks,
+            onQueryChanged = { actions(PlaylistDetailAction.LoadAround(it)) },
+            currentlyPlayingTrack = state.currentlyPlayingTrack,
             onBackButtonClicked = onBackButtonClicked,
             onTrackClicked = onPlayTrack,
         )
@@ -332,43 +306,47 @@ private fun NavGraphBuilder.podcastEpisodeDetailScreen(
 ) {
     composable(route = route) {
         val viewModel = hiltViewModel<PodcastEpisodeDetailViewModel>()
+        val state by viewModel.state.collectAsState()
+        val actions = remember { viewModel.actions }
 
-        val uiState = viewModel.uiState
-        val isEpisodeCurrentlyPlaying = viewModel.isEpisodeCurrentlyPlaying
-        if (viewModel.podcastEpisode == null) {
-            Box(modifier = Modifier.fillMaxSize()) {
-                if (uiState == PodcastEpisodeDetailViewModel.UiSate.LOADING) {
-                    DefaultMusifyLoadingAnimation(
-                        modifier = Modifier.align(Alignment.Center),
-                        isVisible = true
-                    )
-                }
-                if (uiState == PodcastEpisodeDetailViewModel.UiSate.ERROR) {
-                    DefaultMusifyErrorMessage(
-                        modifier = Modifier.align(Alignment.Center),
-                        title = "Oops! Something doesn't look right",
-                        subtitle = "Please check the internet connection",
-                        onRetryButtonClicked = viewModel::retryFetchingEpisode
-                    )
+        when (val podcastEpisode = state.podcastEpisode) {
+            null -> {
+                Box(modifier = Modifier.fillMaxSize()) {
+                    if (state.loadingState == PodcastEpisodeDetailViewModel.LoadingState.LOADING) {
+                        DefaultMusifyLoadingAnimation(
+                            modifier = Modifier.align(Alignment.Center),
+                            isVisible = true
+                        )
+                    }
+                    if (state.loadingState == PodcastEpisodeDetailViewModel.LoadingState.ERROR) {
+                        DefaultMusifyErrorMessage(
+                            modifier = Modifier.align(Alignment.Center),
+                            title = "Oops! Something doesn't look right",
+                            subtitle = "Please check the internet connection",
+                            onRetryButtonClicked = { actions(PodcastEpisodeAction.Retry) }
+                        )
+                    }
                 }
             }
-        } else {
-            PodcastEpisodeDetailScreen(
-                podcastEpisode = viewModel.podcastEpisode!!,
-                isEpisodeCurrentlyPlaying = isEpisodeCurrentlyPlaying,
-                isPlaybackLoading = uiState == PodcastEpisodeDetailViewModel.UiSate.PLAYBACK_LOADING,
-                onPlayButtonClicked = {
-                    onPlayButtonClicked(viewModel.podcastEpisode!!)
-                },
-                onPauseButtonClicked = { onPauseButtonClicked() },
-                onShareButtonClicked = {},
-                onAddButtonClicked = {},
-                onDownloadButtonClicked = {},
-                onBackButtonClicked = onBackButtonClicked,
-                navigateToPodcastDetailScreen = {
-                    viewModel.podcastEpisode?.let { navigateToPodcastShowDetailScreen(it) }
-                }
-            )
+
+            else -> {
+                PodcastEpisodeDetailScreen(
+                    podcastEpisode = podcastEpisode,
+                    isEpisodeCurrentlyPlaying = state.isEpisodeCurrentlyPlaying,
+                    isPlaybackLoading = state.loadingState == PodcastEpisodeDetailViewModel.LoadingState.PLAYBACK_LOADING,
+                    onPlayButtonClicked = {
+                        onPlayButtonClicked(podcastEpisode)
+                    },
+                    onPauseButtonClicked = { onPauseButtonClicked() },
+                    onShareButtonClicked = {},
+                    onAddButtonClicked = {},
+                    onDownloadButtonClicked = {},
+                    onBackButtonClicked = onBackButtonClicked,
+                    navigateToPodcastDetailScreen = {
+                        state.podcastEpisode?.let { navigateToPodcastShowDetailScreen(it) }
+                    }
+                )
+            }
         }
     }
 }
@@ -383,40 +361,39 @@ private fun NavGraphBuilder.podcastShowDetailScreen(
 ) {
     composable(route = route) {
         val viewModel = hiltViewModel<PodcastShowDetailViewModel>()
-        val uiState = viewModel.uiState
-        val episodesForShow by viewModel.episodesForShow.collectAsState()
-        val onQueryChanged = remember {
-            viewModel.onQueryChanged
-        }
-        if (viewModel.podcastShow == null) {
+        val state by viewModel.state.collectAsState()
+        val actions = remember { viewModel.actions }
+        val episodesForShow = state.episodesForShow
+
+        if (state.podcastShow == null) {
             Box(modifier = Modifier.fillMaxSize()) {
-                if (uiState == PodcastShowDetailViewModel.UiState.LOADING) {
+                if (state.loadingState == PodcastShowDetailViewModel.LoadingState.LOADING) {
                     DefaultMusifyLoadingAnimation(
                         modifier = Modifier.align(Alignment.Center),
                         isVisible = true
                     )
                 }
-                if (uiState == PodcastShowDetailViewModel.UiState.ERROR) {
+                if (state.loadingState == PodcastShowDetailViewModel.LoadingState.ERROR) {
                     DefaultMusifyErrorMessage(
                         modifier = Modifier.align(Alignment.Center),
                         title = "Oops! Something doesn't look right",
                         subtitle = "Please check the internet connection",
-                        onRetryButtonClicked = viewModel::retryFetchingShow
+                        onRetryButtonClicked = { actions(PodcastShowDetailAction.Retry) }
                     )
                 }
             }
         } else {
             PodcastShowDetailScreen(
-                podcastShow = viewModel.podcastShow!!,
+                podcastShow = state.podcastShow!!,
                 onBackButtonClicked = onBackButtonClicked,
                 onEpisodePlayButtonClicked = onEpisodePlayButtonClicked,
                 onEpisodePauseButtonClicked = onEpisodePauseButtonClicked,
-                currentlyPlayingEpisode = viewModel.currentlyPlayingEpisode,
-                isCurrentlyPlayingEpisodePaused = viewModel.isCurrentlyPlayingEpisodePaused,
-                isPlaybackLoading = uiState == PodcastShowDetailViewModel.UiState.PLAYBACK_LOADING,
+                currentlyPlayingEpisode = state.currentlyPlayingEpisode,
+                isCurrentlyPlayingEpisodePaused = state.isCurrentlyPlayingEpisodePaused,
+                isPlaybackLoading = state.loadingState == PodcastShowDetailViewModel.LoadingState.PLAYBACK_LOADING,
                 onEpisodeClicked = onEpisodeClicked,
                 episodes = episodesForShow,
-                onQueryChanged = onQueryChanged,
+                onQueryChanged = { actions(PodcastShowDetailAction.LoadAround(it)) },
             )
         }
     }

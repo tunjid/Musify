@@ -25,8 +25,9 @@ import com.example.musify.ui.dynamicTheme.dynamicbackgroundmodifier.DynamicBackg
 import com.example.musify.ui.dynamicTheme.dynamicbackgroundmodifier.dynamicBackground
 import com.example.musify.ui.screens.GetPremiumScreen
 import com.example.musify.ui.screens.homescreen.HomeScreen
-import com.example.musify.ui.screens.searchscreen.TiledListFlowsForSearchScreen
 import com.example.musify.ui.screens.searchscreen.SearchScreen
+import com.example.musify.ui.screens.searchscreen.TiledListFlowsForSearchScreen
+import com.example.musify.viewmodels.homefeedviewmodel.HomeAction
 import com.example.musify.viewmodels.homefeedviewmodel.HomeFeedViewModel
 import com.example.musify.viewmodels.searchviewmodel.SearchFilter
 import com.example.musify.viewmodels.searchviewmodel.SearchViewModel
@@ -88,6 +89,8 @@ private fun NavGraphBuilder.homeScreen(
 ) {
     composable(route) {
         val homeFeedViewModel = hiltViewModel<HomeFeedViewModel>()
+        val state by homeFeedViewModel.state.collectAsState()
+        val actions = remember { homeFeedViewModel.actions }
         val filters = remember {
             listOf(
                 HomeFeedFilters.Music,
@@ -95,15 +98,15 @@ private fun NavGraphBuilder.homeScreen(
             )
         }
         HomeScreen(
-            timeBasedGreeting = homeFeedViewModel.greetingPhrase,
+            timeBasedGreeting = state.greetingPhrase,
             homeFeedFilters = filters,
             currentlySelectedHomeFeedFilter = HomeFeedFilters.None,
             onHomeFeedFilterClick = {},
-            carousels = homeFeedViewModel.homeFeedCarousels.value,
+            carousels = state.homeFeedCarousels,
             onHomeFeedCarouselCardClick = onCarouselCardClicked,
-            isErrorMessageVisible = homeFeedViewModel.uiState.value == HomeFeedViewModel.HomeFeedUiState.ERROR,
-            isLoading = homeFeedViewModel.uiState.value == HomeFeedViewModel.HomeFeedUiState.LOADING,
-            onErrorRetryButtonClick = homeFeedViewModel::refreshFeed
+            isErrorMessageVisible = state.loadingState == HomeFeedViewModel.HomeFeedLoadingState.ERROR,
+            isLoading = state.loadingState == HomeFeedViewModel.HomeFeedLoadingState.LOADING,
+            onErrorRetryButtonClick = { actions(HomeAction.Retry) }
         )
     }
 }

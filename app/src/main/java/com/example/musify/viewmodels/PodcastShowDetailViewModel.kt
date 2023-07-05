@@ -1,9 +1,6 @@
 package com.example.musify.viewmodels
 
 import android.app.Application
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
@@ -16,110 +13,156 @@ import com.example.musify.domain.PodcastEpisode
 import com.example.musify.domain.PodcastShow
 import com.example.musify.ui.navigation.MusifyNavigationDestinations
 import com.example.musify.usecases.getCurrentlyPlayingEpisodePlaybackStateUseCase.GetCurrentlyPlayingEpisodePlaybackStateUseCase
+import com.tunjid.mutator.Mutation
+import com.tunjid.mutator.coroutines.SuspendingStateHolder
+import com.tunjid.mutator.coroutines.actionStateFlowProducer
+import com.tunjid.mutator.coroutines.mapToMutation
+import com.tunjid.mutator.coroutines.toMutationStream
+import com.tunjid.tiler.TiledList
 import com.tunjid.tiler.distinctBy
 import com.tunjid.tiler.emptyTiledList
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.onEach
-import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.launch
 import javax.inject.Inject
 import com.example.musify.usecases.getCurrentlyPlayingEpisodePlaybackStateUseCase.GetCurrentlyPlayingEpisodePlaybackStateUseCase.PlaybackState as UseCasePlaybackState
 
+data class PodcastShowDetailState(
+    val currentQuery: PodcastQuery,
+    val podcastShow: PodcastShow? = null,
+    val currentlyPlayingEpisode: PodcastEpisode? = null,
+    val isCurrentlyPlayingEpisodePaused: Boolean? = null,
+    val loadingState: PodcastShowDetailViewModel.LoadingState = PodcastShowDetailViewModel.LoadingState.LOADING,
+    val episodesForShow: TiledList<PodcastQuery, PodcastEpisode> = emptyTiledList()
+)
+
+sealed class PodcastShowDetailAction {
+    object Retry : PodcastShowDetailAction()
+    data class LoadAround(val podcastQuery: PodcastQuery) : PodcastShowDetailAction()
+}
 
 @HiltViewModel
 class PodcastShowDetailViewModel @Inject constructor(
     application: Application,
     savedStateHandle: SavedStateHandle,
     getCurrentlyPlayingEpisodePlaybackStateUseCase: GetCurrentlyPlayingEpisodePlaybackStateUseCase,
-    private val podcastsRepository: PodcastsRepository
+    podcastsRepository: PodcastsRepository
 ) : AndroidViewModel(application) {
 
-    enum class UiState { IDLE, LOADING, PLAYBACK_LOADING, ERROR }
+    enum class LoadingState { IDLE, LOADING, PLAYBACK_LOADING, ERROR }
 
     private val showId =
         savedStateHandle.get<String>(MusifyNavigationDestinations.PodcastShowDetailScreen.NAV_ARG_PODCAST_SHOW_ID)!!
 
-    private val episodesQuery = MutableStateFlow(
-        PodcastQuery(
-            showId = showId,
-            countryCode = getCountryCode(),
-            page = Page(offset = 0)
-        )
-    )
-    val episodesForShow = episodesQuery.toTiledList(
-        startQuery = episodesQuery.value,
-        queryFor = { copy(page = it) },
-        fetcher = podcastsRepository::podcastsFor
-    )
-        .map { it.distinctBy(PodcastEpisode::id) }
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5_000),
-            initialValue = emptyTiledList()
-        )
+    private val stateProducer =
+        viewModelScope.actionStateFlowProducer<PodcastShowDetailAction, PodcastShowDetailState>(
+            initialState = PodcastShowDetailState(
+                currentQuery = PodcastQuery(
+                    showId = showId,
+                    countryCode = getCountryCode(),
+                    page = Page(offset = 0)
+                )
+            ),
+            mutationFlows = listOf(
+                getCurrentlyPlayingEpisodePlaybackStateUseCase.playbackStateMutations(),
+                podcastsRepository.fetchShowMutations(
+                    showId = showId,
+                    countryCode = getCountryCode()
+                )
+            ),
+            actionTransform = { actions ->
+                actions.toMutationStream {
+                    when (val action = type()) {
+                        is PodcastShowDetailAction.LoadAround -> action.flow.episodeMutations(
+                            podcastsRepository = podcastsRepository
+                        )
 
-    val onQueryChanged: (PodcastQuery) -> Unit = episodesQuery::value::set
-
-    var currentlyPlayingEpisode by mutableStateOf<PodcastEpisode?>(null)
-        private set
-
-    var uiState by mutableStateOf(UiState.IDLE)
-        private set
-
-    var podcastShow by mutableStateOf<PodcastShow?>(null)
-        private set
-
-    var isCurrentlyPlayingEpisodePaused by mutableStateOf<Boolean?>(null)
-        private set
-
-    init {
-        fetchShowUpdatingUiState()
-        getCurrentlyPlayingEpisodePlaybackStateUseCase
-            .currentlyPlayingEpisodePlaybackStateStream
-            .onEach {
-                when (it) {
-                    is UseCasePlaybackState.Ended -> {
-                        isCurrentlyPlayingEpisodePaused = null
-                        currentlyPlayingEpisode = null
-                    }
-                    is UseCasePlaybackState.Loading -> uiState = UiState.PLAYBACK_LOADING
-                    is UseCasePlaybackState.Paused ->{
-                        currentlyPlayingEpisode = it.pausedEpisode
-                        isCurrentlyPlayingEpisodePaused = true
-                    }
-                    is UseCasePlaybackState.Playing -> {
-                        if (uiState != UiState.IDLE) uiState = UiState.IDLE
-                        if (isCurrentlyPlayingEpisodePaused == null || isCurrentlyPlayingEpisodePaused == true) {
-                            isCurrentlyPlayingEpisodePaused = false
-                        }
-                        currentlyPlayingEpisode = it.playingEpisode
+                        is PodcastShowDetailAction.Retry -> action.flow.retryMutations(
+                            podcastsRepository = podcastsRepository,
+                            showId = showId,
+                            countryCode = getCountryCode()
+                        )
                     }
                 }
-            }.launchIn(viewModelScope)
-    }
+            }
+        )
 
-    fun retryFetchingShow() {
-        fetchShowUpdatingUiState()
-    }
+    val state = stateProducer.state
+    val actions = stateProducer.accept
+}
 
-    private fun fetchShowUpdatingUiState() {
-        viewModelScope.launch {
-            uiState = UiState.LOADING
-            val result = podcastsRepository.fetchPodcastShow(
-                showId = showId,
-                countryCode = getCountryCode()
-            )
-            if (result is FetchedResource.Success) {
-                uiState = UiState.IDLE
-                podcastShow = result.data
-            } else {
-                uiState = UiState.ERROR
+private fun GetCurrentlyPlayingEpisodePlaybackStateUseCase.playbackStateMutations(): Flow<Mutation<PodcastShowDetailState>> =
+    currentlyPlayingEpisodePlaybackStateStream
+        .mapToMutation {
+            when (it) {
+                is UseCasePlaybackState.Ended -> copy(
+                    isCurrentlyPlayingEpisodePaused = null,
+                    currentlyPlayingEpisode = null
+                )
+
+                is UseCasePlaybackState.Loading -> copy(
+                    loadingState = PodcastShowDetailViewModel.LoadingState.PLAYBACK_LOADING
+                )
+
+                is UseCasePlaybackState.Paused -> copy(
+                    currentlyPlayingEpisode = it.pausedEpisode,
+                    isCurrentlyPlayingEpisodePaused = true
+                )
+
+                is UseCasePlaybackState.Playing -> copy(
+                    loadingState =
+                    if (loadingState != PodcastShowDetailViewModel.LoadingState.IDLE) PodcastShowDetailViewModel.LoadingState.IDLE
+                    else loadingState,
+                    isCurrentlyPlayingEpisodePaused =
+                    if (isCurrentlyPlayingEpisodePaused == null || isCurrentlyPlayingEpisodePaused == true) false
+                    else isCurrentlyPlayingEpisodePaused,
+                    currentlyPlayingEpisode = it.playingEpisode
+                )
             }
         }
+
+private fun Flow<PodcastShowDetailAction.Retry>.retryMutations(
+    podcastsRepository: PodcastsRepository,
+    showId: String,
+    countryCode: String
+): Flow<Mutation<PodcastShowDetailState>> =
+    flatMapLatest {
+        podcastsRepository.fetchShowMutations(
+            showId = showId,
+            countryCode = countryCode
+        )
     }
 
+context(SuspendingStateHolder<PodcastShowDetailState>)
+private suspend fun Flow<PodcastShowDetailAction.LoadAround>.episodeMutations(
+    podcastsRepository: PodcastsRepository
+): Flow<Mutation<PodcastShowDetailState>> =
+    map { it.podcastQuery }
+        .toTiledList(
+            startQuery = state().currentQuery,
+            queryFor = { copy(page = it) },
+            fetcher = podcastsRepository::podcastsFor
+        )
+        .mapToMutation {
+            copy(episodesForShow = it.distinctBy(PodcastEpisode::id))
+        }
+
+private fun PodcastsRepository.fetchShowMutations(
+    showId: String,
+    countryCode: String
+) = flow<Mutation<PodcastShowDetailState>> {
+    val result = fetchPodcastShow(
+        showId = showId,
+        countryCode = countryCode,
+    )
+    if (result is FetchedResource.Success) emit {
+        copy(
+            loadingState = PodcastShowDetailViewModel.LoadingState.IDLE,
+            podcastShow = result.data
+        )
+    } else emit {
+        copy(loadingState = PodcastShowDetailViewModel.LoadingState.ERROR)
+    }
 }
