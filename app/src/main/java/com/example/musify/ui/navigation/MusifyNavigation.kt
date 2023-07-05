@@ -26,9 +26,9 @@ import com.example.musify.ui.dynamicTheme.dynamicbackgroundmodifier.dynamicBackg
 import com.example.musify.ui.screens.GetPremiumScreen
 import com.example.musify.ui.screens.homescreen.HomeScreen
 import com.example.musify.ui.screens.searchscreen.SearchScreen
-import com.example.musify.ui.screens.searchscreen.TiledListFlowsForSearchScreen
 import com.example.musify.viewmodels.homefeedviewmodel.HomeAction
 import com.example.musify.viewmodels.homefeedviewmodel.HomeFeedViewModel
+import com.example.musify.viewmodels.searchviewmodel.SearchAction
 import com.example.musify.viewmodels.searchviewmodel.SearchFilter
 import com.example.musify.viewmodels.searchviewmodel.SearchViewModel
 
@@ -122,47 +122,35 @@ private fun NavGraphBuilder.searchScreen(
 ) {
     composable(route = route) {
         val viewModel = hiltViewModel<SearchViewModel>()
-        val tiledItems = remember {
-            TiledListFlowsForSearchScreen(
-                albumTiledListFlow = viewModel.albumsTiledList,
-                artistTiledListFLow = viewModel.artistsTiledList,
-                trackTiledListFlow = viewModel.trackTiledList,
-                playlistTiledListFlow = viewModel.playlistsTiledList,
-                podcastTiledListFlow = viewModel.showsTiledList,
-                episodeTiledListFlow = viewModel.episodesTiledList
-            )
-        }
-        val isOnline by viewModel.isOnline.collectAsState()
+        val state by viewModel.state.collectAsState()
+        val actions = remember { viewModel.actions }
         val controller = LocalSoftwareKeyboardController.current
-        val genres = remember { viewModel.getAvailableGenres() }
         val filters = remember { SearchFilter.values().toList() }
-        val currentlySelectedFilter by viewModel.currentlySelectedFilter
         val dynamicBackgroundResource by remember {
             derivedStateOf {
-                val imageUrl = when (currentlySelectedFilter) {
-                    SearchFilter.ALBUMS -> tiledItems.albumTiledListFlow.value.firstOrNull()?.albumArtUrlString
-                    SearchFilter.TRACKS -> tiledItems.trackTiledListFlow.value.firstOrNull()?.imageUrlString
-                    SearchFilter.ARTISTS -> tiledItems.artistTiledListFLow.value.firstOrNull()?.imageUrlString
-                    SearchFilter.PLAYLISTS -> tiledItems.playlistTiledListFlow.value.firstOrNull()?.imageUrlString
-                    SearchFilter.PODCASTS -> tiledItems.podcastTiledListFlow.value.firstOrNull()?.imageUrlString
+                val imageUrl = when (state.selectedSearchFilter) {
+                    SearchFilter.ALBUMS -> state.tiledItems.albumTiledListFlow.value.firstOrNull()?.albumArtUrlString
+                    SearchFilter.TRACKS -> state.tiledItems.trackTiledListFlow.value.firstOrNull()?.imageUrlString
+                    SearchFilter.ARTISTS -> state.tiledItems.artistTiledListFLow.value.firstOrNull()?.imageUrlString
+                    SearchFilter.PLAYLISTS -> state.tiledItems.playlistTiledListFlow.value.firstOrNull()?.imageUrlString
+                    SearchFilter.PODCASTS -> state.tiledItems.podcastTiledListFlow.value.firstOrNull()?.imageUrlString
                 }
                 if (imageUrl == null) DynamicBackgroundResource.Empty
                 else DynamicBackgroundResource.FromImageUrl(imageUrl)
             }
         }
-        val currentlyPlayingTrack by viewModel.currentlyPlayingTrackStream.collectAsState(initial = null)
         Box(modifier = Modifier.dynamicBackground(dynamicBackgroundResource)) {
             SearchScreen(
-                isOnline = isOnline,
-                genreList = genres,
+                isOnline = state.isOnline,
+                genreList = state.genres,
                 searchScreenFilters = filters,
-                tiledListFlows = tiledItems,
-                currentlyPlayingTrack = currentlyPlayingTrack,
-                currentlySelectedFilter = viewModel.currentlySelectedFilter.value,
-                onQueryChanged = viewModel.onContentQueryChanged,
-                onSearchFilterChanged = viewModel::updateSearchFilter,
+                tiledListFlows = state.tiledItems,
+                currentlyPlayingTrack = state.currentlyPlayingTrack,
+                currentlySelectedFilter = state.selectedSearchFilter,
+                onQueryChanged = { actions(SearchAction.Searches.LoadAround(it)) },
+                onSearchFilterChanged = { actions(SearchAction.SearchFilterChange(it)) },
                 onGenreItemClick = {},
-                onSearchTextChanged = viewModel::search,
+                onSearchTextChanged = { actions(SearchAction.Searches.Search(it)) },
                 onSearchQueryItemClicked = onSearchResultClicked,
                 onImeDoneButtonClicked = {
                     controller?.hide()

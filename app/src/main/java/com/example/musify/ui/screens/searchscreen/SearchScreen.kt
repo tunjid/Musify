@@ -32,21 +32,7 @@ import com.example.musify.domain.Genre
 import com.example.musify.domain.SearchResult
 import com.example.musify.ui.components.*
 import com.example.musify.viewmodels.searchviewmodel.SearchFilter
-import com.tunjid.tiler.TiledList
-import kotlinx.coroutines.flow.StateFlow
-
-/**
- * A data class that contains all the different paging items associated
- * with the[SearchScreen].
- */
-data class TiledListFlowsForSearchScreen(
-    val albumTiledListFlow: StateFlow<TiledList<ContentQuery, SearchResult.AlbumSearchResult>>,
-    val artistTiledListFLow: StateFlow<TiledList<ContentQuery, SearchResult.ArtistSearchResult>>,
-    val trackTiledListFlow: StateFlow<TiledList<ContentQuery, SearchResult.TrackSearchResult>>,
-    val playlistTiledListFlow: StateFlow<TiledList<ContentQuery, SearchResult.PlaylistSearchResult>>,
-    val podcastTiledListFlow: StateFlow<TiledList<ContentQuery, SearchResult.PodcastSearchResult>>,
-    val episodeTiledListFlow: StateFlow<TiledList<ContentQuery, SearchResult.EpisodeSearchResult>>,
-)
+import com.example.musify.viewmodels.searchviewmodel.SearchTiledListFlows
 
 // fix lazy list scrolling to top after config change
 @ExperimentalAnimationApi
@@ -58,7 +44,7 @@ fun SearchScreen(
     isOnline: Boolean,
     genreList: List<Genre>,
     searchScreenFilters: List<SearchFilter>,
-    tiledListFlows: TiledListFlowsForSearchScreen,
+    tiledListFlows: SearchTiledListFlows,
     currentlyPlayingTrack: SearchResult.TrackSearchResult?,
     currentlySelectedFilter: SearchFilter,
     onQueryChanged: (ContentQuery) -> Unit,
@@ -171,7 +157,7 @@ fun SearchScreen(
 @Composable
 private fun SearchQueryList(
     isOnline: Boolean,
-    tiledListFlows: TiledListFlowsForSearchScreen,
+    tiledListFlows: SearchTiledListFlows,
     onItemClick: (SearchResult) -> Unit,
     onQueryChanged: (ContentQuery) -> Unit,
     currentlySelectedFilter: SearchFilter,
