@@ -40,7 +40,7 @@ data class PodcastShowDetailState(
 
 sealed class PodcastShowDetailAction {
     object Retry : PodcastShowDetailAction()
-    data class LoadAround(val podcastQuery: PodcastQuery) : PodcastShowDetailAction()
+    data class LoadAround(val podcastQuery: PodcastQuery?) : PodcastShowDetailAction()
 }
 
 @HiltViewModel
@@ -139,7 +139,7 @@ context(SuspendingStateHolder<PodcastShowDetailState>)
 private suspend fun Flow<PodcastShowDetailAction.LoadAround>.episodeMutations(
     podcastsRepository: PodcastsRepository
 ): Flow<Mutation<PodcastShowDetailState>> =
-    map { it.podcastQuery }
+    map { it.podcastQuery ?: state().currentQuery }
         .toTiledList(
             startQuery = state().currentQuery,
             queryFor = { copy(page = it) },

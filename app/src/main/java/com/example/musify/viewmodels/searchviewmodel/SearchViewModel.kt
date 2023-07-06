@@ -63,7 +63,7 @@ data class SearchTiledListFlows(
 sealed class SearchAction(val key: String) {
 
     sealed class Searches : SearchAction(key = "Searches") {
-        data class LoadAround(val contentQuery: ContentQuery) : Searches()
+        data class LoadAround(val contentQuery: ContentQuery?) : Searches()
 
         data class Search(val searchQuery: String) : Searches()
     }
@@ -199,13 +199,14 @@ private fun Flow<SearchAction.Searches>.searchMutations(
     // Collect from the backing flow and update searches as appropriate
     collect { search ->
         when (search) {
-            is SearchAction.Searches.LoadAround -> when (search.contentQuery.type) {
+            is SearchAction.Searches.LoadAround -> when (search.contentQuery?.type) {
                 SearchQueryType.ALBUM -> albumsQuery.value = search.contentQuery
                 SearchQueryType.ARTIST -> artistsQuery.value = search.contentQuery
                 SearchQueryType.PLAYLIST -> playlistsQuery.value = search.contentQuery
                 SearchQueryType.TRACK -> tracksQuery.value = search.contentQuery
                 SearchQueryType.SHOW -> showsQuery.value = search.contentQuery
                 SearchQueryType.EPISODE -> episodesQuery.value = search.contentQuery
+                null -> Unit
             }
 
             is SearchAction.Searches.Search -> {

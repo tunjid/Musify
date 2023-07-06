@@ -66,7 +66,7 @@ fun SearchTrackListItems(
     isOnline: Boolean,
     currentlyPlayingTrack: SearchResult.TrackSearchResult?,
     tracksListForSearchQuery: StateFlow<TiledList<ContentQuery, SearchResult.TrackSearchResult>>,
-    onQueryChanged: (ContentQuery) -> Unit,
+    onQueryChanged: (ContentQuery?) -> Unit,
     onItemClick: (SearchResult) -> Unit,
 ) = TiledLazyColumn(
     isOnline = isOnline,
@@ -93,7 +93,7 @@ fun SearchTrackListItems(
 fun SearchAlbumListItems(
     isOnline: Boolean,
     albumListForSearchQuery: StateFlow<TiledList<ContentQuery, SearchResult.AlbumSearchResult>>,
-    onQueryChanged: (ContentQuery) -> Unit,
+    onQueryChanged: (ContentQuery?) -> Unit,
     onItemClick: (SearchResult) -> Unit,
 ) = TiledLazyColumn(
     isOnline = isOnline,
@@ -125,7 +125,7 @@ fun SearchArtistListItems(
     isOnline: Boolean,
     artistListForSearchQuery: StateFlow<TiledList<ContentQuery, SearchResult.ArtistSearchResult>>,
     onItemClick: (SearchResult) -> Unit,
-    onQueryChanged: (ContentQuery) -> Unit,
+    onQueryChanged: (ContentQuery?) -> Unit,
     artistImageErrorPainter: Painter
 ) = TiledLazyColumn(
     isOnline = isOnline,
@@ -157,7 +157,7 @@ fun SearchArtistListItems(
 fun SearchPlaylistListItems(
     isOnline: Boolean,
     playlistListForSearchQuery: StateFlow<TiledList<ContentQuery, SearchResult.PlaylistSearchResult>>,
-    onQueryChanged: (ContentQuery) -> Unit,
+    onQueryChanged: (ContentQuery?) -> Unit,
     onItemClick: (SearchResult) -> Unit,
     playlistImageErrorPainter: Painter
 ) = TiledLazyColumn(
@@ -191,7 +191,7 @@ fun SearchPodcastListItems(
     isOnline: Boolean,
     podcastsForSearchQuery: StateFlow<TiledList<ContentQuery, SearchResult.PodcastSearchResult>>,
     episodesForSearchQuery: StateFlow<TiledList<ContentQuery, SearchResult.EpisodeSearchResult>>,
-    onQueryChanged: (ContentQuery) -> Unit,
+    onQueryChanged: (ContentQuery?) -> Unit,
     onPodcastItemClicked: (SearchResult.PodcastSearchResult) -> Unit,
     onEpisodeItemClicked: (SearchResult.EpisodeSearchResult) -> Unit
 ) {
@@ -294,7 +294,7 @@ private fun <T : Any> LazyListScope.itemsWithEmptyListContent(
 private fun <Item> TiledLazyColumn(
     isOnline: Boolean,
     itemsFlow: StateFlow<TiledList<ContentQuery, Item>>,
-    onQueryChanged: (ContentQuery) -> Unit,
+    onQueryChanged: (ContentQuery?) -> Unit,
     content: LazyListScope.(TiledList<ContentQuery, Item>) -> Unit
 ) {
     val lazyListState = rememberLazyListState()
@@ -325,9 +325,6 @@ private fun <Item> TiledLazyColumn(
     }
     lazyListState.PivotedTilingEffect(
         items = items,
-        onQueryChanged = { query ->
-            if (query != null) println("Q: ${query.page.offset}")
-            if (query != null) onQueryChanged(query)
-        }
+        onQueryChanged = onQueryChanged
     )
 }

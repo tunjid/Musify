@@ -42,7 +42,7 @@ data class ArtistDetailState(
 )
 
 sealed class ArtistDetailAction {
-    data class LoadAround(val query: ArtistAlbumsQuery) : ArtistDetailAction()
+    data class LoadAround(val query: ArtistAlbumsQuery?) : ArtistDetailAction()
 }
 
 /**
@@ -147,7 +147,7 @@ context(SuspendingStateHolder<ArtistDetailState>)
 private suspend fun Flow<ArtistDetailAction.LoadAround>.tracksMutations(
     albumsRepository: AlbumsRepository
 ): Flow<Mutation<ArtistDetailState>> =
-    map { it.query }
+    map { it.query ?: state().currentQuery }
         .toTiledList(
             startQuery = state().currentQuery,
             queryFor = { copy(page = it) },

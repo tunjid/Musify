@@ -36,7 +36,7 @@ data class PlaylistDetailState(
 )
 
 sealed class PlaylistDetailAction {
-    data class LoadAround(val query: PlaylistQuery) : PlaylistDetailAction()
+    data class LoadAround(val query: PlaylistQuery?) : PlaylistDetailAction()
 }
 
 @HiltViewModel
@@ -93,7 +93,7 @@ context(SuspendingStateHolder<PlaylistDetailState>)
 private suspend fun Flow<PlaylistDetailAction.LoadAround>.trackListMutations(
     tracksRepository: TracksRepository
 ): Flow<Mutation<PlaylistDetailState>> =
-    map { it.query }
+    map { it.query ?: state().currentQuery }
         .toTiledList(
             startQuery = state().currentQuery,
             queryFor = { copy(page = it) },

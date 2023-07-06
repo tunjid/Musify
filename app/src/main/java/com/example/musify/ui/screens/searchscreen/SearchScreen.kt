@@ -47,7 +47,7 @@ fun SearchScreen(
     tiledListFlows: SearchTiledListFlows,
     currentlyPlayingTrack: SearchResult.TrackSearchResult?,
     currentlySelectedFilter: SearchFilter,
-    onQueryChanged: (ContentQuery) -> Unit,
+    onQueryChanged: (ContentQuery?) -> Unit,
     onSearchFilterChanged: (SearchFilter) -> Unit,
     onGenreItemClick: (Genre) -> Unit,
     onSearchTextChanged: (searchText: String) -> Unit,
@@ -159,7 +159,7 @@ private fun SearchQueryList(
     isOnline: Boolean,
     tiledListFlows: SearchTiledListFlows,
     onItemClick: (SearchResult) -> Unit,
-    onQueryChanged: (ContentQuery) -> Unit,
+    onQueryChanged: (ContentQuery?) -> Unit,
     currentlySelectedFilter: SearchFilter,
     currentlyPlayingTrack: SearchResult.TrackSearchResult?,
 ) {

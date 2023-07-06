@@ -61,7 +61,7 @@ fun PlaylistDetailScreen(
     @DrawableRes imageResToUseWhenImageUrlStringIsNull: Int,
     tracks: TiledList<PlaylistQuery, SearchResult.TrackSearchResult>,
     currentlyPlayingTrack: SearchResult.TrackSearchResult?,
-    onQueryChanged: (PlaylistQuery) -> Unit,
+    onQueryChanged: (PlaylistQuery?) -> Unit,
     onBackButtonClicked: () -> Unit,
     onTrackClicked: (SearchResult.TrackSearchResult) -> Unit,
 ) {
@@ -166,7 +166,7 @@ fun PlaylistDetailScreen(
         }
         lazyListState.PivotedTilingEffect(
             items = tracks,
-            onQueryChanged = { if (it != null) onQueryChanged(it) }
+            onQueryChanged = onQueryChanged
         )
     }
 }

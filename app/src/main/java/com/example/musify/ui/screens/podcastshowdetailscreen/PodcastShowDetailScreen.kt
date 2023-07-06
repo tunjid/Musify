@@ -78,7 +78,7 @@ fun PodcastShowDetailScreen(
     isCurrentlyPlayingEpisodePaused: Boolean?,
     isPlaybackLoading: Boolean,
     onEpisodeClicked: (PodcastEpisode) -> Unit,
-    onQueryChanged: (PodcastQuery) -> Unit,
+    onQueryChanged: (PodcastQuery?) -> Unit,
     episodes: TiledList<PodcastQuery, PodcastEpisode>
 ) {
     val lazyListState = rememberLazyListState()
@@ -170,7 +170,7 @@ fun PodcastShowDetailScreen(
 
         lazyListState.PivotedTilingEffect(
             items = episodes,
-            onQueryChanged = { if (it != null) onQueryChanged(it) }
+            onQueryChanged = onQueryChanged
         )
     }
 }

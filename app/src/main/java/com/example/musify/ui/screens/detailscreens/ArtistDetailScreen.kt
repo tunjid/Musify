@@ -79,7 +79,7 @@ fun ArtistDetailScreen(
     popularTracks: List<SearchResult.TrackSearchResult>,
     releases: TiledList<ArtistAlbumsQuery, SearchResult.AlbumSearchResult>,
     currentlyPlayingTrack: SearchResult.TrackSearchResult?,
-    onQueryChanged: (ArtistAlbumsQuery) -> Unit,
+    onQueryChanged: (ArtistAlbumsQuery?) -> Unit,
     onBackButtonClicked: () -> Unit,
     onPlayButtonClicked: () -> Unit,
     onTrackClicked: (SearchResult.TrackSearchResult) -> Unit,
@@ -226,7 +226,7 @@ fun ArtistDetailScreen(
         }
         lazyListState.PivotedTilingEffect(
             items = releases,
-            onQueryChanged = { if (it != null) onQueryChanged(it) }
+            onQueryChanged = onQueryChanged
         )
     }
 }
