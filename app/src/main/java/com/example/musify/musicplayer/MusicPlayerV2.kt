@@ -10,7 +10,6 @@ interface MusicPlayerV2 {
         data class Playing(
             override val currentlyPlayingStreamable: Streamable,
             val totalDuration: Long,
-            val currentPlaybackPositionInMillisFlow: Flow<Long>
         ) : PlaybackState()
 
         data class Paused(override val currentlyPlayingStreamable: Streamable) : PlaybackState()
@@ -20,6 +19,9 @@ interface MusicPlayerV2 {
     }
 
     val currentPlaybackStateStream: Flow<PlaybackState>
+
+    val currentPlaybackPositionInMillisFlow: Flow<Long?>
+
     fun playStreamable(streamable: Streamable, associatedAlbumArt: Bitmap)
     fun pauseCurrentlyPlayingTrack()
     fun stopPlayingTrack()

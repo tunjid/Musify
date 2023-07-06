@@ -1,10 +1,32 @@
 package com.example.musify.ui.screens
 
-import androidx.compose.foundation.layout.*
-import androidx.compose.material.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.systemBarsPadding
+import androidx.compose.material.ContentAlpha
+import androidx.compose.material.Icon
+import androidx.compose.material.IconButton
+import androidx.compose.material.MaterialTheme
+import androidx.compose.material.Slider
+import androidx.compose.material.SliderDefaults
+import androidx.compose.material.Surface
+import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Share
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -17,7 +39,6 @@ import com.example.musify.domain.Streamable
 import com.example.musify.ui.components.AsyncImageWithPlaceholder
 import com.example.musify.ui.dynamicTheme.dynamicbackgroundmodifier.DynamicBackgroundResource
 import com.example.musify.ui.dynamicTheme.dynamicbackgroundmodifier.dynamicBackground
-import kotlinx.coroutines.flow.Flow
 
 // collecting the flow within the composable scopes the collector to the composable.
 // This ensures that the collection of flow is stopped as soon this composable
@@ -26,8 +47,8 @@ import kotlinx.coroutines.flow.Flow
 @Composable
 fun NowPlayingScreen(
     streamable: Streamable,
-    playbackProgressFlow: Flow<Float>,
-    timeElapsedStringFlow: Flow<String>,
+    timeElapsedString: String,
+    playbackProgress: Float,
     playbackDurationRange: ClosedFloatingPointRange<Float>,
     isPlaybackPaused: Boolean,
     totalDurationOfCurrentTrackProvider: () -> String,
@@ -92,9 +113,9 @@ fun NowPlayingScreen(
             Spacer(modifier = Modifier.size(8.dp))
             Box {
                 ProgressSliderWithTimeText(modifier = Modifier.fillMaxWidth(),
-                    currentTimeElapsedStringFlow = timeElapsedStringFlow,
+                    timeElapsedString = timeElapsedString,
+                    playbackProgress = playbackProgress,
                     totalDurationOfTrack = totalDurationOfCurrentTrackProvider(),
-                    currentPlaybackProgressFlow = playbackProgressFlow,
                     playbackDurationRange = playbackDurationRange,
                     onSliderValueChange = {})
             }
@@ -219,18 +240,16 @@ private fun PlaybackControls(
 @Composable
 private fun ProgressSliderWithTimeText(
     modifier: Modifier = Modifier,
-    currentTimeElapsedStringFlow: Flow<String>,
-    currentPlaybackProgressFlow: Flow<Float>,
+    timeElapsedString: String,
+    playbackProgress: Float,
     totalDurationOfTrack: String,
     playbackDurationRange: ClosedFloatingPointRange<Float>,
     onSliderValueChange: (Float) -> Unit
 ) {
-    val currentProgress by currentPlaybackProgressFlow.collectAsState(initial = 0f)
-    val timeElapsedString by currentTimeElapsedStringFlow.collectAsState(initial = "00:00")
     Column(modifier = modifier) {
         Slider(
             modifier = Modifier.fillMaxWidth(),
-            value = currentProgress,
+            value = playbackProgress,
             valueRange = playbackDurationRange,
             colors = SliderDefaults.colors(
                 thumbColor = Color.White, activeTrackColor = Color.White

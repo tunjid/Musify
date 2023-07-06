@@ -76,6 +76,18 @@ class MusifyBackgroundMusicPlayerV2 @Inject constructor(
             initialValue = MusicPlayerV2.PlaybackState.Idle
         )
 
+    override val currentPlaybackPositionInMillisFlow: Flow<Long?> =
+        currentPlaybackStateStream.flatMapLatest { playbackState ->
+            when(playbackState) {
+                is MusicPlayerV2.PlaybackState.Ended,
+                MusicPlayerV2.PlaybackState.Error,
+                MusicPlayerV2.PlaybackState.Idle,
+                is MusicPlayerV2.PlaybackState.Loading,
+                is MusicPlayerV2.PlaybackState.Paused -> flowOf(null)
+                is MusicPlayerV2.PlaybackState.Playing -> exoPlayer.getCurrentPlaybackProgressFlow()
+            }
+        }
+
     private fun createEventsListener(onEvents: (Player, Player.Events) -> Unit) =
         object : Player.Listener {
             override fun onEvents(player: Player, events: Player.Events) {
@@ -89,7 +101,6 @@ class MusifyBackgroundMusicPlayerV2 @Inject constructor(
     ) = MusicPlayerV2.PlaybackState.Playing(
         currentlyPlayingStreamable = streamable,
         totalDuration = player.duration,
-        currentPlaybackPositionInMillisFlow = player.getCurrentPlaybackProgressFlow()
     )
 
     override fun playStreamable(

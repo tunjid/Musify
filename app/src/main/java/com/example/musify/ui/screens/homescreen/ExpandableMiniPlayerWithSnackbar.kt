@@ -49,8 +49,8 @@ fun ExpandableMiniPlayerWithSnackbar(
     onPauseButtonClicked: () -> Unit,
     onPlayButtonClicked: (Streamable) -> Unit,
     isPlaybackPaused: Boolean,
-    timeElapsedStringFlow: Flow<String>,
-    playbackProgressFlow: Flow<Float>,
+    timeElapsedString: String,
+    playbackProgress: Float,
     totalDurationOfCurrentTrackText: String,
     modifier: Modifier = Modifier,
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() }
@@ -68,10 +68,10 @@ fun ExpandableMiniPlayerWithSnackbar(
                 NowPlayingScreen(
                     streamable = streamable,
                     isPlaybackPaused = isPlaybackPaused,
-                    timeElapsedStringFlow = timeElapsedStringFlow,
+                    timeElapsedString = timeElapsedString,
+                    playbackProgress = playbackProgress,
                     totalDurationOfCurrentTrackProvider = { totalDurationOfCurrentTrackText },
                     playbackDurationRange = PlaybackViewModel.PLAYBACK_PROGRESS_RANGE,
-                    playbackProgressFlow = playbackProgressFlow,
                     onCloseButtonClicked = { isNowPlayingScreenVisible = false },
                     onShuffleButtonClicked = {},
                     onSkipPreviousButtonClicked = {},

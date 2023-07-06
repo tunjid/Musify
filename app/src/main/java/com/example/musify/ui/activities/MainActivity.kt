@@ -5,11 +5,31 @@ import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
-import androidx.compose.animation.*
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.ExperimentalAnimationApi
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.layout.*
-import androidx.compose.material.*
-import androidx.compose.runtime.*
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.material.ExperimentalMaterialApi
+import androidx.compose.material.MaterialTheme
+import androidx.compose.material.SnackbarHost
+import androidx.compose.material.SnackbarHostState
+import androidx.compose.material.Surface
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
@@ -20,7 +40,11 @@ import com.example.musify.ui.navigation.MusifyBottomNavigationDestinations
 import com.example.musify.ui.navigation.MusifyNavigation
 import com.example.musify.ui.screens.homescreen.ExpandableMiniPlayerWithSnackbar
 import com.example.musify.ui.theme.MusifyTheme
+import com.example.musify.viewmodels.PlaybackScreenAction
 import com.example.musify.viewmodels.PlaybackViewModel
+import com.example.musify.viewmodels.currentTrackProgress
+import com.example.musify.viewmodels.currentTrackProgressText
+import com.example.musify.viewmodels.totalDurationOfCurrentTrackTimeText
 import dagger.hilt.android.AndroidEntryPoint
 
 @ExperimentalAnimationApi
@@ -49,25 +73,33 @@ class MainActivity : ComponentActivity() {
 @Composable
 private fun MusifyApp() {
     val playbackViewModel = hiltViewModel<PlaybackViewModel>()
-    val playbackState by playbackViewModel.playbackState
+    val state by playbackViewModel.state.collectAsState()
+    val actions = remember { playbackViewModel.actions }
+
     val snackbarHostState = remember { SnackbarHostState() }
-    val playbackEvent: PlaybackViewModel.Event? by playbackViewModel.playbackEventsFlow.collectAsState(
-        initial = null
-    )
-    val miniPlayerStreamable = remember(playbackState) {
-        playbackState.currentlyPlayingStreamable ?: playbackState.previouslyPlayingStreamable
-    }
+
+
+    val miniPlayerStreamable = state.playbackState.currentlyPlayingStreamable
+        ?: state.playbackState.previouslyPlayingStreamable
     var isNowPlayingScreenVisible by remember { mutableStateOf(false) }
-    LaunchedEffect(key1 = playbackEvent) {
-        if (playbackEvent !is PlaybackViewModel.Event.PlaybackError) return@LaunchedEffect
-        snackbarHostState.currentSnackbarData?.dismiss()
-        snackbarHostState.showSnackbar(
-            message = (playbackEvent as PlaybackViewModel.Event.PlaybackError).errorMessage,
-        )
+    val playbackState by remember {
+        derivedStateOf { state.playbackState }
     }
-    val isPlaybackPaused = remember(playbackState) {
-        playbackState is PlaybackViewModel.PlaybackState.Paused || playbackState is PlaybackViewModel.PlaybackState.PlaybackEnded
+
+    LaunchedEffect(key1 = playbackState) {
+        when (val currentPlaybackState = playbackState) {
+            is PlaybackViewModel.PlaybackState.Error -> {
+                snackbarHostState.currentSnackbarData?.dismiss()
+                snackbarHostState.showSnackbar(
+                    message = currentPlaybackState.errorMessage,
+                )
+            }
+
+            else -> Unit
+        }
     }
+    val isPlaybackPaused = state.playbackState is PlaybackViewModel.PlaybackState.Paused
+            || state.playbackState is PlaybackViewModel.PlaybackState.PlaybackEnded
 
     BackHandler(isNowPlayingScreenVisible) {
         isNowPlayingScreenVisible = false
@@ -85,16 +117,16 @@ private fun MusifyApp() {
         // to null when the playback is stopped
         MusifyNavigation(
             navController = navController,
-            playStreamable = playbackViewModel::playStreamable,
+            playStreamable = { actions(PlaybackScreenAction.Play(it)) },
             isFullScreenNowPlayingOverlayScreenVisible = isNowPlayingScreenVisible,
-            onPausePlayback = playbackViewModel::pauseCurrentlyPlayingTrack
+            onPausePlayback = { actions(PlaybackScreenAction.Pause) }
         )
         Column(modifier = Modifier.align(Alignment.BottomCenter)) {
             AnimatedContent(
                 modifier = Modifier.fillMaxWidth(),
                 targetState = miniPlayerStreamable
-            ) { state ->
-                if (state == null) {
+            ) { streamable ->
+                if (streamable == null) {
                     SnackbarHost(hostState = snackbarHostState)
                 } else {
                     ExpandableMiniPlayerWithSnackbar(
@@ -104,12 +136,12 @@ private fun MusifyApp() {
                                 exit = fadeOut() + slideOutVertically { -it }
                             ),
                         streamable = miniPlayerStreamable!!,
-                        onPauseButtonClicked = playbackViewModel::pauseCurrentlyPlayingTrack,
-                        onPlayButtonClicked = playbackViewModel::resumeIfPausedOrPlay,
+                        onPauseButtonClicked = { actions(PlaybackScreenAction.Pause) },
+                        onPlayButtonClicked = { actions(PlaybackScreenAction.Toggle(it)) },
                         isPlaybackPaused = isPlaybackPaused,
-                        timeElapsedStringFlow = playbackViewModel.flowOfProgressTextOfCurrentTrack.value,
-                        playbackProgressFlow = playbackViewModel.flowOfProgressOfCurrentTrack.value,
-                        totalDurationOfCurrentTrackText = playbackViewModel.totalDurationOfCurrentTrackTimeText.value,
+                        timeElapsedString = state.currentTrackProgressText,
+                        playbackProgress = state.currentTrackProgress,
+                        totalDurationOfCurrentTrackText = state.totalDurationOfCurrentTrackTimeText,
                         snackbarHostState = snackbarHostState
                     )
                 }
