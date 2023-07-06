@@ -1,4 +1,4 @@
-package com.example.musify.ui.screens
+package com.example.musify.ui.screens.premium
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*

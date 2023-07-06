@@ -31,8 +31,6 @@ import com.example.musify.data.repositories.searchrepository.ContentQuery
 import com.example.musify.domain.Genre
 import com.example.musify.domain.SearchResult
 import com.example.musify.ui.components.*
-import com.example.musify.viewmodels.searchviewmodel.SearchFilter
-import com.example.musify.viewmodels.searchviewmodel.SearchTiledListFlows
 
 // fix lazy list scrolling to top after config change
 @ExperimentalAnimationApi

@@ -1,7 +1,7 @@
 package com.example.musify.di
 
-import com.example.musify.viewmodels.homefeedviewmodel.greetingphrasegenerator.CurrentTimeBasedGreetingPhraseGenerator
-import com.example.musify.viewmodels.homefeedviewmodel.greetingphrasegenerator.GreetingPhraseGenerator
+import com.example.musify.ui.screens.homescreen.greetingphrasegenerator.CurrentTimeBasedGreetingPhraseGenerator
+import com.example.musify.ui.screens.homescreen.greetingphrasegenerator.GreetingPhraseGenerator
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn

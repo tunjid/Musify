@@ -1,4 +1,4 @@
-package com.example.musify.viewmodels.homefeedviewmodel.greetingphrasegenerator
+package com.example.musify.ui.screens.homescreen.greetingphrasegenerator
 
 /**
  * An interface that contains the requisite functions required for a

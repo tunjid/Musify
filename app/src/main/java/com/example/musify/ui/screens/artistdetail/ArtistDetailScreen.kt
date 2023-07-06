@@ -1,4 +1,4 @@
-package com.example.musify.ui.screens.detailscreens
+package com.example.musify.ui.screens.artistdetail
 
 import androidx.annotation.DrawableRes
 import androidx.compose.animation.AnimatedVisibility

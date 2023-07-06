@@ -1,4 +1,4 @@
-package com.example.musify.ui.screens
+package com.example.musify.ui.screens.nowplaying
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box

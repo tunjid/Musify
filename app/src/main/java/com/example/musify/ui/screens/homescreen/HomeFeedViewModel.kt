@@ -1,4 +1,4 @@
-package com.example.musify.viewmodels.homefeedviewmodel
+package com.example.musify.ui.screens.homescreen
 
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
@@ -14,7 +14,7 @@ import com.example.musify.domain.PlaylistsForCategory
 import com.example.musify.domain.SearchResult
 import com.example.musify.domain.toHomeFeedCarousel
 import com.example.musify.viewmodels.getCountryCode
-import com.example.musify.viewmodels.homefeedviewmodel.greetingphrasegenerator.GreetingPhraseGenerator
+import com.example.musify.ui.screens.homescreen.greetingphrasegenerator.GreetingPhraseGenerator
 import com.tunjid.mutator.Mutation
 import com.tunjid.mutator.coroutines.actionStateFlowProducer
 import com.tunjid.mutator.coroutines.toMutationStream

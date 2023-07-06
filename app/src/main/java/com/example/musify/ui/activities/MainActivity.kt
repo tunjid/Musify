@@ -40,11 +40,6 @@ import com.example.musify.ui.navigation.MusifyBottomNavigationDestinations
 import com.example.musify.ui.navigation.MusifyNavigation
 import com.example.musify.ui.screens.homescreen.ExpandableMiniPlayerWithSnackbar
 import com.example.musify.ui.theme.MusifyTheme
-import com.example.musify.viewmodels.PlaybackScreenAction
-import com.example.musify.viewmodels.PlaybackViewModel
-import com.example.musify.viewmodels.currentTrackProgress
-import com.example.musify.viewmodels.currentTrackProgressText
-import com.example.musify.viewmodels.totalDurationOfCurrentTrackTimeText
 import dagger.hilt.android.AndroidEntryPoint
 
 @ExperimentalAnimationApi

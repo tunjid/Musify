@@ -1,4 +1,4 @@
-package com.example.musify.viewmodels.artistviewmodel
+package com.example.musify.ui.screens.artistdetail
 
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel

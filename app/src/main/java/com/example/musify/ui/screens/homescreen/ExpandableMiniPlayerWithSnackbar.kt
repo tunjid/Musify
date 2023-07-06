@@ -15,8 +15,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.example.musify.domain.Streamable
 import com.example.musify.ui.components.MusifyMiniPlayer
-import com.example.musify.ui.screens.NowPlayingScreen
-import com.example.musify.viewmodels.PlaybackViewModel
+import com.example.musify.ui.screens.nowplaying.NowPlayingScreen
+import com.example.musify.ui.activities.PlaybackViewModel
 import kotlinx.coroutines.flow.Flow
 
 /**

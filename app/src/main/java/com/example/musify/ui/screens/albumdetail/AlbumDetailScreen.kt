@@ -1,4 +1,4 @@
-package com.example.musify.ui.screens.detailscreens
+package com.example.musify.ui.screens.albumdetail
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn

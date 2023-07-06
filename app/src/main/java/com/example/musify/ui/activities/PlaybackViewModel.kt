@@ -1,4 +1,4 @@
-package com.example.musify.viewmodels
+package com.example.musify.ui.activities
 
 import android.app.Application
 import android.content.Context

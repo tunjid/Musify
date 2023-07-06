@@ -1,4 +1,4 @@
-package com.example.musify.viewmodels.searchviewmodel
+package com.example.musify.ui.screens.searchscreen
 
 /**
  * An enum that contains the different filters that can be applied to

@@ -23,14 +23,14 @@ import com.example.musify.domain.SearchResult
 import com.example.musify.domain.Streamable
 import com.example.musify.ui.dynamicTheme.dynamicbackgroundmodifier.DynamicBackgroundResource
 import com.example.musify.ui.dynamicTheme.dynamicbackgroundmodifier.dynamicBackground
-import com.example.musify.ui.screens.GetPremiumScreen
+import com.example.musify.ui.screens.premium.GetPremiumScreen
 import com.example.musify.ui.screens.homescreen.HomeScreen
 import com.example.musify.ui.screens.searchscreen.SearchScreen
-import com.example.musify.viewmodels.homefeedviewmodel.HomeAction
-import com.example.musify.viewmodels.homefeedviewmodel.HomeFeedViewModel
-import com.example.musify.viewmodels.searchviewmodel.SearchAction
-import com.example.musify.viewmodels.searchviewmodel.SearchFilter
-import com.example.musify.viewmodels.searchviewmodel.SearchViewModel
+import com.example.musify.ui.screens.homescreen.HomeAction
+import com.example.musify.ui.screens.homescreen.HomeFeedViewModel
+import com.example.musify.ui.screens.searchscreen.SearchAction
+import com.example.musify.ui.screens.searchscreen.SearchFilter
+import com.example.musify.ui.screens.searchscreen.SearchViewModel
 
 @ExperimentalAnimationApi
 @ExperimentalMaterialApi

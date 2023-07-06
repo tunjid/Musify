@@ -21,23 +21,23 @@ import com.example.musify.domain.SearchResult
 import com.example.musify.domain.Streamable
 import com.example.musify.ui.components.DefaultMusifyErrorMessage
 import com.example.musify.ui.components.DefaultMusifyLoadingAnimation
-import com.example.musify.ui.screens.detailscreens.AlbumDetailScreen
-import com.example.musify.ui.screens.detailscreens.ArtistDetailScreen
-import com.example.musify.ui.screens.detailscreens.PlaylistDetailScreen
-import com.example.musify.ui.screens.detailscreens.PodcastEpisodeDetailScreen
+import com.example.musify.ui.screens.albumdetail.AlbumDetailScreen
+import com.example.musify.ui.screens.artistdetail.ArtistDetailScreen
+import com.example.musify.ui.screens.playlistdetail.PlaylistDetailScreen
+import com.example.musify.ui.screens.podcastepisodedetail.PodcastEpisodeDetailScreen
 import com.example.musify.ui.screens.podcastshowdetailscreen.PodcastShowDetailScreen
-import com.example.musify.viewmodels.AlbumDetailLoadingState
-import com.example.musify.viewmodels.AlbumDetailViewModel
-import com.example.musify.viewmodels.PlaylistDetailAction
-import com.example.musify.viewmodels.PlaylistDetailViewModel
-import com.example.musify.viewmodels.PodcastEpisodeAction
-import com.example.musify.viewmodels.PodcastEpisodeDetailViewModel
-import com.example.musify.viewmodels.PodcastShowDetailAction
-import com.example.musify.viewmodels.PodcastShowDetailViewModel
-import com.example.musify.viewmodels.artistviewmodel.ArtistDetailAction
-import com.example.musify.viewmodels.artistviewmodel.ArtistDetailScreenLoadingState
-import com.example.musify.viewmodels.artistviewmodel.ArtistDetailViewModel
-import com.example.musify.viewmodels.isEpisodeCurrentlyPlaying
+import com.example.musify.ui.screens.albumdetail.AlbumDetailLoadingState
+import com.example.musify.ui.screens.albumdetail.AlbumDetailViewModel
+import com.example.musify.ui.screens.playlistdetail.PlaylistDetailAction
+import com.example.musify.ui.screens.playlistdetail.PlaylistDetailViewModel
+import com.example.musify.ui.screens.podcastepisodedetail.PodcastEpisodeAction
+import com.example.musify.ui.screens.podcastepisodedetail.PodcastEpisodeDetailViewModel
+import com.example.musify.ui.screens.podcastshowdetailscreen.PodcastShowDetailAction
+import com.example.musify.ui.screens.podcastshowdetailscreen.PodcastShowDetailViewModel
+import com.example.musify.ui.screens.artistdetail.ArtistDetailAction
+import com.example.musify.ui.screens.artistdetail.ArtistDetailScreenLoadingState
+import com.example.musify.ui.screens.artistdetail.ArtistDetailViewModel
+import com.example.musify.ui.screens.podcastepisodedetail.isEpisodeCurrentlyPlaying
 
 /**
  * A nested navigation graph that consists of detail screens.

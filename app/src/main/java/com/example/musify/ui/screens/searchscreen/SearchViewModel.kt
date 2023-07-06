@@ -1,4 +1,4 @@
-package com.example.musify.viewmodels.searchviewmodel
+package com.example.musify.ui.screens.searchscreen
 
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel

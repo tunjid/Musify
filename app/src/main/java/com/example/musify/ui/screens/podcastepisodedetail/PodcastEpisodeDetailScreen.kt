@@ -1,4 +1,4 @@
-package com.example.musify.ui.screens.detailscreens
+package com.example.musify.ui.screens.podcastepisodedetail
 
 import android.text.Spanned
 import androidx.compose.animation.AnimatedVisibility

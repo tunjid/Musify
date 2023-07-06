@@ -1,4 +1,4 @@
-package com.example.musify.viewmodels.homefeedviewmodel.greetingphrasegenerator
+package com.example.musify.ui.screens.homescreen.greetingphrasegenerator
 
 import java.time.LocalTime
 import javax.inject.Inject
