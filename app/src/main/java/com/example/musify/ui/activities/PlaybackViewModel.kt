@@ -5,11 +5,8 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.musify.musicplayer.MusicPlayerV2
 import com.example.musify.usecases.downloadDrawableFromUrlUseCase.DownloadDrawableFromUrlUseCase
-import com.tunjid.mutator.coroutines.actionStateFlowProducer
-import com.tunjid.mutator.coroutines.toMutationStream
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
-
 
 @HiltViewModel
 class PlaybackViewModel @Inject constructor(
@@ -17,7 +14,6 @@ class PlaybackViewModel @Inject constructor(
     musicPlayer: MusicPlayerV2,
     downloadDrawableFromUrlUseCase: DownloadDrawableFromUrlUseCase
 ) : AndroidViewModel(application) {
-
     private val stateProducer =
         viewModelScope.playbackStateProducer(
             context = getApplication(),
@@ -27,11 +23,4 @@ class PlaybackViewModel @Inject constructor(
 
     val state = stateProducer.state
     val actions = stateProducer.accept
-
-    companion object {
-        val PLAYBACK_PROGRESS_RANGE = 0f..100f
-    }
-
 }
-
-

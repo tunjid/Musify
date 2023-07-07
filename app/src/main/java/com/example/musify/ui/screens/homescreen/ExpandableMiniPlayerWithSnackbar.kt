@@ -71,7 +71,6 @@ fun ExpandableMiniPlayerWithSnackbar(
                     timeElapsedString = timeElapsedString,
                     playbackProgress = playbackProgress,
                     totalDurationOfCurrentTrackProvider = { totalDurationOfCurrentTrackText },
-                    playbackDurationRange = PlaybackViewModel.PLAYBACK_PROGRESS_RANGE,
                     onCloseButtonClicked = { isNowPlayingScreenVisible = false },
                     onShuffleButtonClicked = {},
                     onSkipPreviousButtonClicked = {},

@@ -49,7 +49,6 @@ fun NowPlayingScreen(
     streamable: Streamable,
     timeElapsedString: String,
     playbackProgress: Float,
-    playbackDurationRange: ClosedFloatingPointRange<Float>,
     isPlaybackPaused: Boolean,
     totalDurationOfCurrentTrackProvider: () -> String,
     onCloseButtonClicked: () -> Unit,
@@ -112,12 +111,13 @@ fun NowPlayingScreen(
             )
             Spacer(modifier = Modifier.size(8.dp))
             Box {
-                ProgressSliderWithTimeText(modifier = Modifier.fillMaxWidth(),
+                ProgressSliderWithTimeText(
+                    modifier = Modifier.fillMaxWidth(),
                     timeElapsedString = timeElapsedString,
                     playbackProgress = playbackProgress,
                     totalDurationOfTrack = totalDurationOfCurrentTrackProvider(),
-                    playbackDurationRange = playbackDurationRange,
-                    onSliderValueChange = {})
+                    onSliderValueChange = {}
+                )
             }
             PlaybackControls(
                 modifier = Modifier.fillMaxWidth(),
@@ -243,14 +243,12 @@ private fun ProgressSliderWithTimeText(
     timeElapsedString: String,
     playbackProgress: Float,
     totalDurationOfTrack: String,
-    playbackDurationRange: ClosedFloatingPointRange<Float>,
     onSliderValueChange: (Float) -> Unit
 ) {
     Column(modifier = modifier) {
         Slider(
             modifier = Modifier.fillMaxWidth(),
             value = playbackProgress,
-            valueRange = playbackDurationRange,
             colors = SliderDefaults.colors(
                 thumbColor = Color.White, activeTrackColor = Color.White
             ),

@@ -94,7 +94,7 @@ val PlaybackUiState.currentTrackProgressText: String
 val PlaybackUiState.currentTrackProgress: Float
     get() = when {
         currentTrackDuration != null && currentTrackElapsed != null ->
-            (currentTrackElapsed.toFloat() / currentTrackDuration) * 100f
+            currentTrackElapsed.toFloat() / currentTrackDuration
 
         else -> 0f
     }
