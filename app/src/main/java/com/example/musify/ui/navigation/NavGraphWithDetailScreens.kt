@@ -37,7 +37,9 @@ import com.example.musify.ui.screens.podcastshowdetailscreen.PodcastShowDetailVi
 import com.example.musify.ui.screens.artistdetail.ArtistDetailAction
 import com.example.musify.ui.screens.artistdetail.ArtistDetailScreenLoadingState
 import com.example.musify.ui.screens.artistdetail.ArtistDetailViewModel
+import com.example.musify.ui.screens.podcastepisodedetail.PodcastEpisodeDetailState
 import com.example.musify.ui.screens.podcastepisodedetail.isEpisodeCurrentlyPlaying
+import com.example.musify.ui.screens.podcastshowdetailscreen.PodcastShowDetailState
 
 /**
  * A nested navigation graph that consists of detail screens.
@@ -312,13 +314,13 @@ private fun NavGraphBuilder.podcastEpisodeDetailScreen(
         when (val podcastEpisode = state.podcastEpisode) {
             null -> {
                 Box(modifier = Modifier.fillMaxSize()) {
-                    if (state.loadingState == PodcastEpisodeDetailViewModel.LoadingState.LOADING) {
+                    if (state.loadingState == PodcastEpisodeDetailState.LoadingState.LOADING) {
                         DefaultMusifyLoadingAnimation(
                             modifier = Modifier.align(Alignment.Center),
                             isVisible = true
                         )
                     }
-                    if (state.loadingState == PodcastEpisodeDetailViewModel.LoadingState.ERROR) {
+                    if (state.loadingState == PodcastEpisodeDetailState.LoadingState.ERROR) {
                         DefaultMusifyErrorMessage(
                             modifier = Modifier.align(Alignment.Center),
                             title = "Oops! Something doesn't look right",
@@ -333,7 +335,7 @@ private fun NavGraphBuilder.podcastEpisodeDetailScreen(
                 PodcastEpisodeDetailScreen(
                     podcastEpisode = podcastEpisode,
                     isEpisodeCurrentlyPlaying = state.isEpisodeCurrentlyPlaying,
-                    isPlaybackLoading = state.loadingState == PodcastEpisodeDetailViewModel.LoadingState.PLAYBACK_LOADING,
+                    isPlaybackLoading = state.loadingState == PodcastEpisodeDetailState.LoadingState.PLAYBACK_LOADING,
                     onPlayButtonClicked = {
                         onPlayButtonClicked(podcastEpisode)
                     },
@@ -367,13 +369,13 @@ private fun NavGraphBuilder.podcastShowDetailScreen(
 
         if (state.podcastShow == null) {
             Box(modifier = Modifier.fillMaxSize()) {
-                if (state.loadingState == PodcastShowDetailViewModel.LoadingState.LOADING) {
+                if (state.loadingState == PodcastShowDetailState.LoadingState.LOADING) {
                     DefaultMusifyLoadingAnimation(
                         modifier = Modifier.align(Alignment.Center),
                         isVisible = true
                     )
                 }
-                if (state.loadingState == PodcastShowDetailViewModel.LoadingState.ERROR) {
+                if (state.loadingState == PodcastShowDetailState.LoadingState.ERROR) {
                     DefaultMusifyErrorMessage(
                         modifier = Modifier.align(Alignment.Center),
                         title = "Oops! Something doesn't look right",
@@ -390,7 +392,7 @@ private fun NavGraphBuilder.podcastShowDetailScreen(
                 onEpisodePauseButtonClicked = onEpisodePauseButtonClicked,
                 currentlyPlayingEpisode = state.currentlyPlayingEpisode,
                 isCurrentlyPlayingEpisodePaused = state.isCurrentlyPlayingEpisodePaused,
-                isPlaybackLoading = state.loadingState == PodcastShowDetailViewModel.LoadingState.PLAYBACK_LOADING,
+                isPlaybackLoading = state.loadingState == PodcastShowDetailState.LoadingState.PLAYBACK_LOADING,
                 onEpisodeClicked = onEpisodeClicked,
                 episodes = episodesForShow,
                 onQueryChanged = { actions(PodcastShowDetailAction.LoadAround(it)) },

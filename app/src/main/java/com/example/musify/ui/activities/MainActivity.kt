@@ -83,7 +83,7 @@ private fun MusifyApp() {
 
     LaunchedEffect(key1 = playbackState) {
         when (val currentPlaybackState = playbackState) {
-            is PlaybackViewModel.PlaybackState.Error -> {
+            is PlaybackUiState.PlaybackState.Error -> {
                 snackbarHostState.currentSnackbarData?.dismiss()
                 snackbarHostState.showSnackbar(
                     message = currentPlaybackState.errorMessage,
@@ -93,8 +93,8 @@ private fun MusifyApp() {
             else -> Unit
         }
     }
-    val isPlaybackPaused = state.playbackState is PlaybackViewModel.PlaybackState.Paused
-            || state.playbackState is PlaybackViewModel.PlaybackState.PlaybackEnded
+    val isPlaybackPaused = state.playbackState is PlaybackUiState.PlaybackState.Paused
+            || state.playbackState is PlaybackUiState.PlaybackState.PlaybackEnded
 
     BackHandler(isNowPlayingScreenVisible) {
         isNowPlayingScreenVisible = false

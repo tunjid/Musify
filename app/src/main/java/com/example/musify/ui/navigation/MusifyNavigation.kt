@@ -27,6 +27,7 @@ import com.example.musify.ui.screens.premium.GetPremiumScreen
 import com.example.musify.ui.screens.homescreen.HomeScreen
 import com.example.musify.ui.screens.searchscreen.SearchScreen
 import com.example.musify.ui.screens.homescreen.HomeAction
+import com.example.musify.ui.screens.homescreen.HomeFeedLoadingState
 import com.example.musify.ui.screens.homescreen.HomeFeedViewModel
 import com.example.musify.ui.screens.searchscreen.SearchAction
 import com.example.musify.ui.screens.searchscreen.SearchFilter
@@ -104,8 +105,8 @@ private fun NavGraphBuilder.homeScreen(
             onHomeFeedFilterClick = {},
             carousels = state.homeFeedCarousels,
             onHomeFeedCarouselCardClick = onCarouselCardClicked,
-            isErrorMessageVisible = state.loadingState == HomeFeedViewModel.HomeFeedLoadingState.ERROR,
-            isLoading = state.loadingState == HomeFeedViewModel.HomeFeedLoadingState.LOADING,
+            isErrorMessageVisible = state.loadingState == HomeFeedLoadingState.ERROR,
+            isLoading = state.loadingState == HomeFeedLoadingState.LOADING,
             onErrorRetryButtonClick = { actions(HomeAction.Retry) }
         )
     }
