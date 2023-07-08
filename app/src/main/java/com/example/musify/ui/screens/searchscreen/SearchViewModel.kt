@@ -19,7 +19,6 @@ class SearchViewModel @Inject constructor(
     networkMonitor: NetworkMonitor,
     genresRepository: GenresRepository
 ) : AndroidViewModel(application) {
-
     private val stateProducer =
         viewModelScope.searchStateProducer(
             countryCode = getCountryCode(),

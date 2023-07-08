@@ -117,7 +117,7 @@ private fun Flow<SearchAction.Searches>.searchMutations(
     scope: CoroutineScope,
     searchRepository: SearchRepository
 ): Flow<Mutation<SearchUiState>> = flow {
-    val albumsQuery = com.example.musify.data.remote.musicservice.SearchQueryType.ALBUM.contentFlow(
+    val albumsQuery = SearchQueryType.ALBUM.contentFlow(
         countryCode = countryCode,
     )
     val albumsTiledList = albumsQuery.toTiledList(
@@ -127,7 +127,7 @@ private fun Flow<SearchAction.Searches>.searchMutations(
     )
 
     val artistsQuery =
-        com.example.musify.data.remote.musicservice.SearchQueryType.ARTIST.contentFlow(
+        SearchQueryType.ARTIST.contentFlow(
             countryCode = countryCode,
         )
     val artistsTiledList = artistsQuery.toTiledList(
@@ -137,7 +137,7 @@ private fun Flow<SearchAction.Searches>.searchMutations(
     )
 
     val episodesQuery =
-        com.example.musify.data.remote.musicservice.SearchQueryType.EPISODE.contentFlow(
+        SearchQueryType.EPISODE.contentFlow(
             countryCode = countryCode,
         )
     val episodesTiledList = episodesQuery.toTiledList(
@@ -147,7 +147,7 @@ private fun Flow<SearchAction.Searches>.searchMutations(
     )
 
     val playlistsQuery =
-        com.example.musify.data.remote.musicservice.SearchQueryType.PLAYLIST.contentFlow(
+        SearchQueryType.PLAYLIST.contentFlow(
             countryCode = countryCode,
         )
     val playlistsTiledList = playlistsQuery.toTiledList(
@@ -156,7 +156,7 @@ private fun Flow<SearchAction.Searches>.searchMutations(
         idFunction = SearchResult.PlaylistSearchResult::id
     )
 
-    val showsQuery = com.example.musify.data.remote.musicservice.SearchQueryType.SHOW.contentFlow(
+    val showsQuery = SearchQueryType.SHOW.contentFlow(
         countryCode = countryCode,
     )
     val showsTiledList = showsQuery.toTiledList(
@@ -165,7 +165,7 @@ private fun Flow<SearchAction.Searches>.searchMutations(
         idFunction = SearchResult.PodcastSearchResult::id
     )
 
-    val tracksQuery = com.example.musify.data.remote.musicservice.SearchQueryType.TRACK.contentFlow(
+    val tracksQuery = SearchQueryType.TRACK.contentFlow(
         countryCode = countryCode,
     )
     val trackTiledList = tracksQuery.toTiledList(
@@ -189,47 +189,47 @@ private fun Flow<SearchAction.Searches>.searchMutations(
     }
 
     // Collect from the backing flow and update searches as appropriate
-    collect { search ->
-        when (search) {
-            is SearchAction.Searches.LoadAround -> when (search.contentQuery?.type) {
-                SearchQueryType.ALBUM -> albumsQuery.value = search.contentQuery
-                SearchQueryType.ARTIST -> artistsQuery.value = search.contentQuery
-                SearchQueryType.PLAYLIST -> playlistsQuery.value = search.contentQuery
-                SearchQueryType.TRACK -> tracksQuery.value = search.contentQuery
-                SearchQueryType.SHOW -> showsQuery.value = search.contentQuery
-                SearchQueryType.EPISODE -> episodesQuery.value = search.contentQuery
+    collect { action ->
+        when (action) {
+            is SearchAction.Searches.LoadAround -> when (action.contentQuery?.type) {
+                SearchQueryType.ALBUM -> albumsQuery.value = action.contentQuery
+                SearchQueryType.ARTIST -> artistsQuery.value = action.contentQuery
+                SearchQueryType.PLAYLIST -> playlistsQuery.value = action.contentQuery
+                SearchQueryType.TRACK -> tracksQuery.value = action.contentQuery
+                SearchQueryType.SHOW -> showsQuery.value = action.contentQuery
+                SearchQueryType.EPISODE -> episodesQuery.value = action.contentQuery
                 null -> Unit
             }
 
             is SearchAction.Searches.Search -> {
                 albumsQuery.value =
-                    com.example.musify.data.remote.musicservice.SearchQueryType.ALBUM.contentQueryFor(
-                        searchQuery = search.searchQuery,
+                    SearchQueryType.ALBUM.contentQueryFor(
+                        searchQuery = action.searchQuery,
                         countryCode = countryCode,
                     )
                 artistsQuery.value =
-                    com.example.musify.data.remote.musicservice.SearchQueryType.ARTIST.contentQueryFor(
-                        searchQuery = search.searchQuery,
+                    SearchQueryType.ARTIST.contentQueryFor(
+                        searchQuery = action.searchQuery,
                         countryCode = countryCode,
                     )
                 episodesQuery.value =
-                    com.example.musify.data.remote.musicservice.SearchQueryType.EPISODE.contentQueryFor(
-                        searchQuery = search.searchQuery,
+                    SearchQueryType.EPISODE.contentQueryFor(
+                        searchQuery = action.searchQuery,
                         countryCode = countryCode,
                     )
                 playlistsQuery.value =
-                    com.example.musify.data.remote.musicservice.SearchQueryType.PLAYLIST.contentQueryFor(
-                        searchQuery = search.searchQuery,
+                    SearchQueryType.PLAYLIST.contentQueryFor(
+                        searchQuery = action.searchQuery,
                         countryCode = countryCode,
                     )
                 showsQuery.value =
-                    com.example.musify.data.remote.musicservice.SearchQueryType.SHOW.contentQueryFor(
-                        searchQuery = search.searchQuery,
+                    SearchQueryType.SHOW.contentQueryFor(
+                        searchQuery = action.searchQuery,
                         countryCode = countryCode,
                     )
                 tracksQuery.value =
-                    com.example.musify.data.remote.musicservice.SearchQueryType.TRACK.contentQueryFor(
-                        searchQuery = search.searchQuery,
+                    SearchQueryType.TRACK.contentQueryFor(
+                        searchQuery = action.searchQuery,
                         countryCode = countryCode,
                     )
             }

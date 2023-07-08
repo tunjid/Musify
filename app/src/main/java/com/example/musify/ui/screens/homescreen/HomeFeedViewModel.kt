@@ -31,7 +31,6 @@ class HomeFeedViewModel @Inject constructor(
     greetingPhraseGenerator: GreetingPhraseGenerator,
     homeFeedRepository: HomeFeedRepository,
 ) : AndroidViewModel(application) {
-
     private val stateProducer =
         viewModelScope.homeScreenStateProducer(
             countryCode = getCountryCode(),
