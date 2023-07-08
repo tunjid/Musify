@@ -23,7 +23,7 @@ sealed class PlaylistDetailAction {
     data class LoadAround(val query: PlaylistQuery?) : PlaylistDetailAction()
 }
 
-data class PlaylistDetailState(
+data class PlaylistDetailUiState(
     val playlistName: String,
     val imageUrlString: String,
     val ownerName: String,
@@ -42,8 +42,8 @@ fun CoroutineScope.playlistDetailStateProducer(
     countryCode: String,
     tracksRepository: TracksRepository,
     getCurrentlyPlayingTrackUseCase: GetCurrentlyPlayingTrackUseCase,
-) = actionStateFlowProducer<PlaylistDetailAction, PlaylistDetailState>(
-    initialState = PlaylistDetailState(
+) = actionStateFlowProducer<PlaylistDetailAction, PlaylistDetailUiState>(
+    initialState = PlaylistDetailUiState(
         playlistName = playlistName,
         imageUrlString = imageUrlString,
         ownerName = ownerName,
@@ -68,15 +68,15 @@ fun CoroutineScope.playlistDetailStateProducer(
     }
 )
 
-private fun GetCurrentlyPlayingTrackUseCase.playingTrackMutations(): Flow<Mutation<PlaylistDetailState>> =
+private fun GetCurrentlyPlayingTrackUseCase.playingTrackMutations(): Flow<Mutation<PlaylistDetailUiState>> =
     currentlyPlayingTrackStream.map {
         mutation { copy(currentlyPlayingTrack = it) }
     }
 
-context(SuspendingStateHolder<PlaylistDetailState>)
+context(SuspendingStateHolder<PlaylistDetailUiState>)
 private suspend fun Flow<PlaylistDetailAction.LoadAround>.trackListMutations(
     tracksRepository: TracksRepository
-): Flow<Mutation<PlaylistDetailState>> =
+): Flow<Mutation<PlaylistDetailUiState>> =
     map { it.query ?: state().currentQuery }
         .toTiledList(
             startQuery = state().currentQuery,

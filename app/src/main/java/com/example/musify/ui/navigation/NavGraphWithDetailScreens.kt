@@ -33,12 +33,12 @@ import com.example.musify.ui.screens.playlistdetail.PlaylistDetailScreen
 import com.example.musify.ui.screens.playlistdetail.PlaylistDetailViewModel
 import com.example.musify.ui.screens.podcastepisodedetail.PodcastEpisodeAction
 import com.example.musify.ui.screens.podcastepisodedetail.PodcastEpisodeDetailScreen
-import com.example.musify.ui.screens.podcastepisodedetail.PodcastEpisodeDetailState
+import com.example.musify.ui.screens.podcastepisodedetail.PodcastEpisodeDetailUiState
 import com.example.musify.ui.screens.podcastepisodedetail.PodcastEpisodeDetailViewModel
 import com.example.musify.ui.screens.podcastepisodedetail.isEpisodeCurrentlyPlaying
 import com.example.musify.ui.screens.podcastshowdetailscreen.PodcastShowDetailAction
 import com.example.musify.ui.screens.podcastshowdetailscreen.PodcastShowDetailScreen
-import com.example.musify.ui.screens.podcastshowdetailscreen.PodcastShowDetailState
+import com.example.musify.ui.screens.podcastshowdetailscreen.PodcastShowDetailUiState
 import com.example.musify.ui.screens.podcastshowdetailscreen.PodcastShowDetailViewModel
 
 /**
@@ -314,13 +314,13 @@ private fun NavGraphBuilder.podcastEpisodeDetailScreen(
         when (val podcastEpisode = state.podcastEpisode) {
             null -> {
                 Box(modifier = Modifier.fillMaxSize()) {
-                    if (state.loadingState == PodcastEpisodeDetailState.LoadingState.LOADING) {
+                    if (state.loadingState == PodcastEpisodeDetailUiState.LoadingState.LOADING) {
                         DefaultMusifyLoadingAnimation(
                             modifier = Modifier.align(Alignment.Center),
                             isVisible = true
                         )
                     }
-                    if (state.loadingState == PodcastEpisodeDetailState.LoadingState.ERROR) {
+                    if (state.loadingState == PodcastEpisodeDetailUiState.LoadingState.ERROR) {
                         DefaultMusifyErrorMessage(
                             modifier = Modifier.align(Alignment.Center),
                             title = "Oops! Something doesn't look right",
@@ -335,7 +335,7 @@ private fun NavGraphBuilder.podcastEpisodeDetailScreen(
                 PodcastEpisodeDetailScreen(
                     podcastEpisode = podcastEpisode,
                     isEpisodeCurrentlyPlaying = state.isEpisodeCurrentlyPlaying,
-                    isPlaybackLoading = state.loadingState == PodcastEpisodeDetailState.LoadingState.PLAYBACK_LOADING,
+                    isPlaybackLoading = state.loadingState == PodcastEpisodeDetailUiState.LoadingState.PLAYBACK_LOADING,
                     onPlayButtonClicked = {
                         onPlayButtonClicked(podcastEpisode)
                     },
@@ -369,13 +369,13 @@ private fun NavGraphBuilder.podcastShowDetailScreen(
 
         if (state.podcastShow == null) {
             Box(modifier = Modifier.fillMaxSize()) {
-                if (state.loadingState == PodcastShowDetailState.LoadingState.LOADING) {
+                if (state.loadingState == PodcastShowDetailUiState.LoadingState.LOADING) {
                     DefaultMusifyLoadingAnimation(
                         modifier = Modifier.align(Alignment.Center),
                         isVisible = true
                     )
                 }
-                if (state.loadingState == PodcastShowDetailState.LoadingState.ERROR) {
+                if (state.loadingState == PodcastShowDetailUiState.LoadingState.ERROR) {
                     DefaultMusifyErrorMessage(
                         modifier = Modifier.align(Alignment.Center),
                         title = "Oops! Something doesn't look right",
@@ -392,7 +392,7 @@ private fun NavGraphBuilder.podcastShowDetailScreen(
                 onEpisodePauseButtonClicked = onEpisodePauseButtonClicked,
                 currentlyPlayingEpisode = state.currentlyPlayingEpisode,
                 isCurrentlyPlayingEpisodePaused = state.isCurrentlyPlayingEpisodePaused,
-                isPlaybackLoading = state.loadingState == PodcastShowDetailState.LoadingState.PLAYBACK_LOADING,
+                isPlaybackLoading = state.loadingState == PodcastShowDetailUiState.LoadingState.PLAYBACK_LOADING,
                 onEpisodeClicked = onEpisodeClicked,
                 episodes = episodesForShow,
                 onQueryChanged = { actions(PodcastShowDetailAction.LoadAround(it)) },

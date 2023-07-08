@@ -27,7 +27,7 @@ sealed class PodcastShowDetailAction {
     data class LoadAround(val podcastQuery: PodcastQuery?) : PodcastShowDetailAction()
 }
 
-data class PodcastShowDetailState(
+data class PodcastShowDetailUiState(
     val currentQuery: PodcastQuery,
     val podcastShow: PodcastShow? = null,
     val currentlyPlayingEpisode: PodcastEpisode? = null,
@@ -43,8 +43,8 @@ fun CoroutineScope.podcastShowDetailStateProducer(
     countryCode: String,
     podcastsRepository: PodcastsRepository,
     getCurrentlyPlayingEpisodePlaybackStateUseCase: GetCurrentlyPlayingEpisodePlaybackStateUseCase,
-) = actionStateFlowProducer<PodcastShowDetailAction, PodcastShowDetailState>(
-    initialState = PodcastShowDetailState(
+) = actionStateFlowProducer<PodcastShowDetailAction, PodcastShowDetailUiState>(
+    initialState = PodcastShowDetailUiState(
         currentQuery = PodcastQuery(
             showId = showId,
             countryCode = countryCode,
@@ -75,7 +75,7 @@ fun CoroutineScope.podcastShowDetailStateProducer(
     }
 )
 
-private fun GetCurrentlyPlayingEpisodePlaybackStateUseCase.playbackStateMutations(): Flow<Mutation<PodcastShowDetailState>> =
+private fun GetCurrentlyPlayingEpisodePlaybackStateUseCase.playbackStateMutations(): Flow<Mutation<PodcastShowDetailUiState>> =
     currentlyPlayingEpisodePlaybackStateStream
         .mapToMutation {
             when (it) {
@@ -85,7 +85,7 @@ private fun GetCurrentlyPlayingEpisodePlaybackStateUseCase.playbackStateMutation
                 )
 
                 is GetCurrentlyPlayingEpisodePlaybackStateUseCase.PlaybackState.Loading -> copy(
-                    loadingState = PodcastShowDetailState.LoadingState.PLAYBACK_LOADING
+                    loadingState = PodcastShowDetailUiState.LoadingState.PLAYBACK_LOADING
                 )
 
                 is GetCurrentlyPlayingEpisodePlaybackStateUseCase.PlaybackState.Paused -> copy(
@@ -94,7 +94,7 @@ private fun GetCurrentlyPlayingEpisodePlaybackStateUseCase.playbackStateMutation
                 )
 
                 is GetCurrentlyPlayingEpisodePlaybackStateUseCase.PlaybackState.Playing -> copy(
-                    loadingState = PodcastShowDetailState.LoadingState.IDLE,
+                    loadingState = PodcastShowDetailUiState.LoadingState.IDLE,
                     isCurrentlyPlayingEpisodePaused = when (isCurrentlyPlayingEpisodePaused) {
                         null, true -> false
                         else -> isCurrentlyPlayingEpisodePaused
@@ -108,7 +108,7 @@ private fun Flow<PodcastShowDetailAction.Retry>.retryMutations(
     podcastsRepository: PodcastsRepository,
     showId: String,
     countryCode: String
-): Flow<Mutation<PodcastShowDetailState>> =
+): Flow<Mutation<PodcastShowDetailUiState>> =
     flatMapLatest {
         podcastsRepository.fetchShowMutations(
             showId = showId,
@@ -116,10 +116,10 @@ private fun Flow<PodcastShowDetailAction.Retry>.retryMutations(
         )
     }
 
-context(SuspendingStateHolder<PodcastShowDetailState>)
+context(SuspendingStateHolder<PodcastShowDetailUiState>)
 private suspend fun Flow<PodcastShowDetailAction.LoadAround>.episodeMutations(
     podcastsRepository: PodcastsRepository
-): Flow<Mutation<PodcastShowDetailState>> =
+): Flow<Mutation<PodcastShowDetailUiState>> =
     map { it.podcastQuery ?: state().currentQuery }
         .toTiledList(
             startQuery = state().currentQuery,
@@ -133,17 +133,17 @@ private suspend fun Flow<PodcastShowDetailAction.LoadAround>.episodeMutations(
 private fun PodcastsRepository.fetchShowMutations(
     showId: String,
     countryCode: String
-) = flow<Mutation<PodcastShowDetailState>> {
+) = flow<Mutation<PodcastShowDetailUiState>> {
     val result = fetchPodcastShow(
         showId = showId,
         countryCode = countryCode,
     )
     if (result is FetchedResource.Success) emit {
         copy(
-            loadingState = PodcastShowDetailState.LoadingState.IDLE,
+            loadingState = PodcastShowDetailUiState.LoadingState.IDLE,
             podcastShow = result.data
         )
     } else emit {
-        copy(loadingState = PodcastShowDetailState.LoadingState.ERROR)
+        copy(loadingState = PodcastShowDetailUiState.LoadingState.ERROR)
     }
 }

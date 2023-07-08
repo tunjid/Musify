@@ -22,7 +22,7 @@ sealed class HomeAction {
     object Retry : HomeAction()
 }
 
-data class HomeState(
+data class HomeUiState(
     val loadingState: HomeFeedLoadingState = HomeFeedLoadingState.LOADING,
     val homeFeedCarousels: List<HomeFeedCarousel> = emptyList(),
     val greetingPhrase: String,
@@ -39,8 +39,8 @@ fun CoroutineScope.homeScreenStateProducer(
     languageCode: ISO6391LanguageCode,
     greetingPhraseGenerator: GreetingPhraseGenerator,
     homeFeedRepository: HomeFeedRepository,
-) = actionStateFlowProducer<HomeAction, HomeState>(
-    initialState = HomeState(
+) = actionStateFlowProducer<HomeAction, HomeUiState>(
+    initialState = HomeUiState(
         greetingPhrase = greetingPhraseGenerator.generatePhrase()
     ),
     mutationFlows = listOf(
@@ -143,7 +143,7 @@ private fun <FetchedResourceType> FetchedResource<FetchedResourceType, MusifyErr
         is FetchedResource.Success -> data
     }
 
-private fun List<HomeFeedCarousel>?.toMutation(): Mutation<HomeState> = {
+private fun List<HomeFeedCarousel>?.toMutation(): Mutation<HomeUiState> = {
     val additions = this@toMutation
     copy(
         homeFeedCarousels = when (additions) {

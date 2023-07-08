@@ -18,7 +18,7 @@ sealed class PodcastEpisodeAction {
     object Retry : PodcastEpisodeAction()
 }
 
-data class PodcastEpisodeDetailState(
+data class PodcastEpisodeDetailUiState(
     val loadingState: LoadingState = LoadingState.LOADING,
     val currentlyPlayingEpisode: PodcastEpisode? = null,
     val podcastEpisode: PodcastEpisode? = null,
@@ -26,7 +26,7 @@ data class PodcastEpisodeDetailState(
     enum class LoadingState { IDLE, LOADING, PLAYBACK_LOADING, ERROR }
 }
 
-val PodcastEpisodeDetailState.isEpisodeCurrentlyPlaying
+val PodcastEpisodeDetailUiState.isEpisodeCurrentlyPlaying
     get() = currentlyPlayingEpisode.equalsIgnoringImageSize(podcastEpisode)
 
 fun CoroutineScope.podcastEpisodeDetailStateProducer(
@@ -34,8 +34,8 @@ fun CoroutineScope.podcastEpisodeDetailStateProducer(
     countryCode: String,
     podcastsRepository: PodcastsRepository,
     getCurrentlyPlayingEpisodePlaybackStateUseCase: GetCurrentlyPlayingEpisodePlaybackStateUseCase
-) = actionStateFlowProducer<PodcastEpisodeAction, PodcastEpisodeDetailState>(
-    initialState = PodcastEpisodeDetailState(),
+) = actionStateFlowProducer<PodcastEpisodeAction, PodcastEpisodeDetailUiState>(
+    initialState = PodcastEpisodeDetailUiState(),
     mutationFlows = listOf(
         getCurrentlyPlayingEpisodePlaybackStateUseCase.playbackStateMutations(),
         podcastsRepository.fetchEpisodeMutations(
@@ -57,7 +57,7 @@ fun CoroutineScope.podcastEpisodeDetailStateProducer(
     }
 )
 
-private fun GetCurrentlyPlayingEpisodePlaybackStateUseCase.playbackStateMutations(): Flow<Mutation<PodcastEpisodeDetailState>> =
+private fun GetCurrentlyPlayingEpisodePlaybackStateUseCase.playbackStateMutations(): Flow<Mutation<PodcastEpisodeDetailUiState>> =
     currentlyPlayingEpisodePlaybackStateStream
         .mapToMutation {
             when (it) {
@@ -67,11 +67,11 @@ private fun GetCurrentlyPlayingEpisodePlaybackStateUseCase.playbackStateMutation
                 )
 
                 is GetCurrentlyPlayingEpisodePlaybackStateUseCase.PlaybackState.Loading -> copy(
-                    loadingState = PodcastEpisodeDetailState.LoadingState.PLAYBACK_LOADING
+                    loadingState = PodcastEpisodeDetailUiState.LoadingState.PLAYBACK_LOADING
                 )
 
                 is GetCurrentlyPlayingEpisodePlaybackStateUseCase.PlaybackState.Playing -> copy(
-                    loadingState = PodcastEpisodeDetailState.LoadingState.IDLE,
+                    loadingState = PodcastEpisodeDetailUiState.LoadingState.IDLE,
                     // Initially this.podcastEpisode might be null when the
                     // flow sends it's first emission. This makes it impossible
                     // to compare this.podcastEpisode and it.playingEpisode.
@@ -84,9 +84,9 @@ private fun GetCurrentlyPlayingEpisodePlaybackStateUseCase.playbackStateMutation
 private fun PodcastsRepository.fetchEpisodeMutations(
     episodeId: String,
     countryCode: String,
-): Flow<Mutation<PodcastEpisodeDetailState>> = flow {
+): Flow<Mutation<PodcastEpisodeDetailUiState>> = flow {
     emit {
-        copy(loadingState = PodcastEpisodeDetailState.LoadingState.LOADING)
+        copy(loadingState = PodcastEpisodeDetailUiState.LoadingState.LOADING)
     }
     val fetchedResource = fetchPodcastEpisode(
         episodeId = episodeId,
@@ -96,7 +96,7 @@ private fun PodcastsRepository.fetchEpisodeMutations(
     emit {
         copy(
             podcastEpisode = episode,
-            loadingState = if (episode == null) PodcastEpisodeDetailState.LoadingState.ERROR else PodcastEpisodeDetailState.LoadingState.IDLE
+            loadingState = if (episode == null) PodcastEpisodeDetailUiState.LoadingState.ERROR else PodcastEpisodeDetailUiState.LoadingState.IDLE
         )
     }
 }
