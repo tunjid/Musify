@@ -76,7 +76,7 @@ class MusifyAlbumsRepositoryTest {
         val albumId = "4aawyAB9vmqN3uQ7FjRGTy"
         // when fetching the album
         val result = runBlocking {
-            musifyAlbumsRepository.fetchAlbumWithId(albumId,"IN")
+            musifyAlbumsRepository.fetchAlbumWithId(albumId, "IN")
         }
         // the return type must be of type FetchedResource.Success
         assert(result is FetchedResource.Success)

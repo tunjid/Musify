@@ -5,17 +5,11 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
 import com.example.musify.data.repositories.tracksrepository.TracksRepository
-import com.example.musify.data.utils.FetchedResource
 import com.example.musify.ui.navigation.MusifyNavigationDestinations
 import com.example.musify.usecases.getCurrentlyPlayingTrackUseCase.GetCurrentlyPlayingTrackUseCase
 import com.example.musify.usecases.getPlaybackLoadingStatusUseCase.GetPlaybackLoadingStatusUseCase
 import com.example.musify.viewmodels.getCountryCode
-import com.tunjid.mutator.Mutation
-import com.tunjid.mutator.coroutines.actionStateFlowProducer
-import com.tunjid.mutator.coroutines.mapToMutation
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flow
 import javax.inject.Inject
 
 @HiltViewModel

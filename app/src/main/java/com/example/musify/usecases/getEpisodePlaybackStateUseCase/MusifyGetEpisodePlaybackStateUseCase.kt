@@ -21,13 +21,16 @@ class MusifyGetEpisodePlaybackStateUseCase @Inject constructor(
             when (it) {
                 is MusicPlayerV2.PlaybackState.Ended,
                 is MusicPlayerV2.PlaybackState.Error -> GetEpisodePlaybackStateUseCase.PlaybackState.Ended
+
                 is MusicPlayerV2.PlaybackState.Loading -> GetEpisodePlaybackStateUseCase.PlaybackState.Loading
                 is MusicPlayerV2.PlaybackState.Paused -> {
                     GetEpisodePlaybackStateUseCase.PlaybackState.Paused(it.currentlyPlayingStreamable as PodcastEpisode)
                 }
+
                 is MusicPlayerV2.PlaybackState.Playing -> {
                     GetEpisodePlaybackStateUseCase.PlaybackState.Playing(it.currentlyPlayingStreamable as PodcastEpisode)
                 }
+
                 is MusicPlayerV2.PlaybackState.Idle -> null
             }
         }

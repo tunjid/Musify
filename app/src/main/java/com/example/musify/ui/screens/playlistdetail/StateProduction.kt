@@ -84,5 +84,5 @@ private suspend fun Flow<PlaylistDetailAction.LoadAround>.trackListMutations(
             fetcher = tracksRepository::playListsFor
         )
         .mapToMutation {
-            copy(tracks = it.distinctBy(com.example.musify.domain.SearchResult.TrackSearchResult::id))
+            copy(tracks = it.distinctBy(SearchResult.TrackSearchResult::id))
         }

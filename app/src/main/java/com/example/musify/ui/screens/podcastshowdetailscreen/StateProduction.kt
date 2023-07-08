@@ -8,7 +8,6 @@ import com.example.musify.data.utils.FetchedResource
 import com.example.musify.domain.PodcastEpisode
 import com.example.musify.domain.PodcastShow
 import com.example.musify.usecases.getCurrentlyPlayingEpisodePlaybackStateUseCase.GetCurrentlyPlayingEpisodePlaybackStateUseCase
-import com.example.musify.viewmodels.getCountryCode
 import com.tunjid.mutator.Mutation
 import com.tunjid.mutator.coroutines.SuspendingStateHolder
 import com.tunjid.mutator.coroutines.actionStateFlowProducer
@@ -44,7 +43,6 @@ fun CoroutineScope.podcastShowDetailStateProducer(
     countryCode: String,
     podcastsRepository: PodcastsRepository,
     getCurrentlyPlayingEpisodePlaybackStateUseCase: GetCurrentlyPlayingEpisodePlaybackStateUseCase,
-
 ) = actionStateFlowProducer<PodcastShowDetailAction, PodcastShowDetailState>(
     initialState = PodcastShowDetailState(
         currentQuery = PodcastQuery(

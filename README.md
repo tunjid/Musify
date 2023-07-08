@@ -1,11 +1,18 @@
 # Musify
+
 [![Project Status: Inactive – The project has reached a stable, usable state but is no longer being actively developed; support/maintenance will be provided as time allows.](https://www.repostatus.org/badges/latest/inactive.svg)](https://www.repostatus.org/#inactive)
 
-Musify is a clone of the popular Spotify app built completely using Jetpack compose. Both podcasts episodes and tracks are available for playback. Under the hood, it uses the Spotify API to fetch the data. It is 
-completely built using Jetpack compose. It is also worth noting that it is not a complete one-on-one clone of the app. It can be considered as an app 
-that is heavily inspired by the design of the official Spotify app with some custom design tweaks. It uses many API’s such as Hilt,Retrofit, and Paging 3. I built this project purely for educational purposes. I neither intend to release, nor do I plan on monetizing any part of this project. 
+Musify is a clone of the popular Spotify app built completely using Jetpack compose. Both podcasts
+episodes and tracks are available for playback. Under the hood, it uses the Spotify API to fetch the
+data. It is
+completely built using Jetpack compose. It is also worth noting that it is not a complete one-on-one
+clone of the app. It can be considered as an app
+that is heavily inspired by the design of the official Spotify app with some custom design tweaks.
+It uses many API’s such as Hilt,Retrofit, and Paging 3. I built this project purely for educational
+purposes. I neither intend to release, nor do I plan on monetizing any part of this project.
 
 ## Table of contents
+
 1. [Demo](#demo)
 2. [Screenshots](#screenshots)
 3. [Tech Stack](#tech-stack)
@@ -14,9 +21,11 @@ that is heavily inspired by the design of the official Spotify app with some cus
 6. [Installation](#installation)
 
 ## Demo
+
 https://user-images.githubusercontent.com/54663474/218087723-0bf43793-3ff4-4e24-934e-37725e5cd248.mp4
 
 ## Screenshots
+
 <img src = "screenshots/home_screen.png" width = "216" height = "456"/> &nbsp; <img src = "screenshots/search_screen.png" width = "216" height = "456"/> &nbsp; <img src = "screenshots/full_screen_player.png" width = "216" height = "456"/> 
 ## Podcasts
 <img src = "screenshots/podcasts_search_screen.png" width = "216" height = "456"/> &nbsp; <img src = "screenshots/show_detail_screen.png" width = "216" height = "456" /> &nbsp; <img src = "screenshots/episode_detail_screen.png" width = "216" height = "456" />
@@ -53,34 +62,49 @@ https://user-images.githubusercontent.com/54663474/218087723-0bf43793-3ff4-4e24-
   <dd> The app ensures that the backstack is properly managed. By poping upto, but not including the Home Screen everytime the user navigates to a bottom naivgation destination, the number of destinations in the backstack gets reduced. This imporves the overall UX of the app. </dd>
   <dt> Attention to tiny details 🔍 </dt>
   <dd> The app was built with an attention to even the tiniest of details. These features might seem trivial, but it affects the UX negatively if they are not present. The app tries to mimic such functionality even though they might get unnoticed in order to immitate the features that the app would need, if it were to be officially released. The following are some of the many UX improving features that the app has. <br>
-  
-  - The clear button of the search bar in the search screen will only appear if there is text within it. It also uses a subtle animation while entering/exiting.
-- If the user is inside a nested navigation destination associated with a bottom navigation destination, and taps on the bottom navigation icon, the backstack would be popped.
-- Plural strings are used to display gramatically correct text. This can be specifically seen in the metadata of podcast episodes where the date and duration strings are formatted in a gramatically corrected manner. For example, an episode that has a duration of 1 hour is displayed as '1 hr', whereas an episode that has a duration of 2 or more hours, is displayed with 'hrs' as a suffix. 
+
+- The clear button of the search bar in the search screen will only appear if there is text within
+  it. It also uses a subtle animation while entering/exiting.
+- If the user is inside a nested navigation destination associated with a bottom navigation
+  destination, and taps on the bottom navigation icon, the backstack would be popped.
+- Plural strings are used to display gramatically correct text. This can be specifically seen in the
+  metadata of podcast episodes where the date and duration strings are formatted in a gramatically
+  corrected manner. For example, an episode that has a duration of 1 hour is displayed as '1 hr',
+  whereas an episode that has a duration of 2 or more hours, is displayed with 'hrs' as a suffix.
    </dd>
   <dt> HTML styled text🖌</dt>
   <dd> The app leverages compose-view interop to display html styled text. It's mainly used in the descriptions of the podcast show/episode detail screens. This means, these textfields can display text in different styles, such as italics and bold. Moreover, since the text is html styled, it can even display text in other forms such as lists. The URLs in the descriptions are even clickable, allowing the user to navigate to a linked website. </dd>
    <dt> Additional features 🎄 </dt>
    <dd> As of writing this, the IOS version of the official Spotify app uses a dynamic background color in the search screen. The Android version of the app doesn't have that feature. The Musify app mimics that feature by using a dynamic background color for the search screen. </dd>
+
 </dl>
 
 ## Source code, Architecture, & Testing
+
 - All concrete implementations are prefixed by the term "Musify".
 - Uses multi-repository pattern.
 - MVVM archtecture.
-- Commit messages follow the [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) specification.
+- Commit messages follow the [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/)
+  specification.
 - Consists of extensive unit tests with a predominant focus on testing the data layer.
-- An illustration depicting the setup of the navigation graph can be found [here](https://github.com/t3chkid/Musify/tree/main/app/src/main/java/com/example/musify/ui/navigation).
+- An illustration depicting the setup of the navigation graph can be
+  found [here](https://github.com/t3chkid/Musify/tree/main/app/src/main/java/com/example/musify/ui/navigation).
 
 ## Installation
-1. Create a Spotify account and log into the [Spotify Developer Dashboard](https://developer.spotify.com). 
-2. Create an app from the dashboard and get the `Client ID` and `Client Secret`. 
+
+1. Create a Spotify account and log into
+   the [Spotify Developer Dashboard](https://developer.spotify.com).
+2. Create an app from the dashboard and get the `Client ID` and `Client Secret`.
 3. Add the two fields to the `local.properties` file of your project in the following manner.
+
 ```properties
 SPOTIFY_CLIENT_ID = 2dfe051892f54e528b17b635f16d825d
 SPOTIFY_CLIENT_SECRET = 0df748c72dbd40cd99edc951649cefd7
 ```
-4. Add the following code snippet inside the `defaultConfig` block of the `android` block in your **app's** build.gradle file.
+
+4. Add the following code snippet inside the `defaultConfig` block of the `android` block in your *
+   *app's** build.gradle file.
+
 ```kotlin
 android {
     // ...
@@ -95,5 +119,6 @@ android {
     // ...
  }
 ```
+
 5. If you followed the instructions properly you must be able to build the app and run it.
 

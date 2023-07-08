@@ -1,9 +1,5 @@
 package com.example.musify.data.tiling
 
-import com.example.musify.data.repositories.searchrepository.ContentQuery
-import com.example.musify.data.repositories.searchrepository.itemsFor
-import com.example.musify.domain.SearchResult
-import com.example.musify.domain.SearchResults
 import com.tunjid.tiler.PivotRequest
 import com.tunjid.tiler.Tile
 import com.tunjid.tiler.emptyTiledList
@@ -12,10 +8,7 @@ import com.tunjid.tiler.toPivotedTileInputs
 import com.tunjid.tiler.toTiledList
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.catch
-import kotlinx.coroutines.flow.emptyFlow
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.retry
 import java.io.IOException
 

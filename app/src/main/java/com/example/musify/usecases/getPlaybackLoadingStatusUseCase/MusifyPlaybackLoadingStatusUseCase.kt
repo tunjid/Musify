@@ -8,7 +8,7 @@ import javax.inject.Inject
 
 class MusifyGetPlaybackLoadingStatusUseCase @Inject constructor(
     musicPlayerV2: MusicPlayerV2
-):GetPlaybackLoadingStatusUseCase {
+) : GetPlaybackLoadingStatusUseCase {
     override val loadingStatusStream: Flow<Boolean> = musicPlayerV2.currentPlaybackStateStream
         .map { it is MusicPlayerV2.PlaybackState.Loading }
         .distinctUntilChanged()

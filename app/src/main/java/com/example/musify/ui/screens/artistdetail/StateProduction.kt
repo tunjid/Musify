@@ -95,8 +95,10 @@ private fun GetPlaybackLoadingStatusUseCase.loadingStatusMutations(): Flow<Mutat
             loadingState = when {
                 isPlaybackLoading && loadingState !is ArtistDetailScreenLoadingState.Loading ->
                     ArtistDetailScreenLoadingState.Loading
+
                 !isPlaybackLoading && loadingState is ArtistDetailScreenLoadingState.Loading ->
                     ArtistDetailScreenLoadingState.Idle
+
                 else -> loadingState
             }
         )

@@ -11,7 +11,7 @@ data class ArtistAlbumsQuery(
     override val page: Page,
     val artistId: String,
     val countryCode: String,
-): PagedQuery
+) : PagedQuery
 
 /**
  * A repository that contains methods related to albums. **All methods
