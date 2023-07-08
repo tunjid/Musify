@@ -58,7 +58,6 @@ fun Modifier.dynamicBackground(
     dynamicBackgroundResource: DynamicBackgroundResource = DynamicBackgroundResource.Empty,
     dynamicBackgroundStyle: DynamicBackgroundStyle = DynamicBackgroundStyle.Gradient()
 ) = composed {
-    val context = LocalContext.current
     val themeManager = LocalDynamicThemeManager.current
     val defaultBackgroundColor = MaterialTheme.colors.background
     var backgroundColor by remember { mutableStateOf(defaultBackgroundColor) }
@@ -73,7 +72,7 @@ fun Modifier.dynamicBackground(
         val newBackgroundColor = when (dynamicBackgroundResource) {
             DynamicBackgroundResource.Empty -> defaultBackgroundColor
             is DynamicBackgroundResource.FromImageUrl -> themeManager
-                .getBackgroundColorForImageFromUrl(dynamicBackgroundResource.url, context)
+                .getBackgroundColorForImageFromUrl(dynamicBackgroundResource.url)
                 ?: return@LaunchedEffect
         }
         backgroundColor = newBackgroundColor

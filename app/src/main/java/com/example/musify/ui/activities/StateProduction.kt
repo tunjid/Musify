@@ -1,6 +1,5 @@
 package com.example.musify.ui.activities
 
-import android.content.Context
 import androidx.core.graphics.drawable.toBitmap
 import com.example.musify.domain.PodcastEpisode
 import com.example.musify.domain.SearchResult
@@ -53,7 +52,6 @@ data class PlaybackUiState(
 }
 
 fun CoroutineScope.playbackStateProducer(
-    context: Context,
     musicPlayer: MusicPlayerV2,
     downloadDrawableFromUrlUseCase: DownloadDrawableFromUrlUseCase,
 ) = actionStateFlowProducer<PlaybackScreenAction, PlaybackUiState>(
@@ -72,13 +70,11 @@ fun CoroutineScope.playbackStateProducer(
                 is PlaybackScreenAction.Play -> action.flow.playMutations(
                     musicPlayer = musicPlayer,
                     downloadDrawableFromUrlUseCase = downloadDrawableFromUrlUseCase,
-                    context = context,
                 )
 
                 is PlaybackScreenAction.Toggle -> action.flow.toggleMutations(
                     musicPlayer = musicPlayer,
                     downloadDrawableFromUrlUseCase = downloadDrawableFromUrlUseCase,
-                    context = context,
                 )
             }
         }
@@ -142,21 +138,18 @@ private fun MusicPlayerV2.playbackProgressMutations(): Flow<Mutation<PlaybackUiS
 
 private fun Flow<PlaybackScreenAction.Toggle>.toggleMutations(
     musicPlayer: MusicPlayerV2,
-    downloadDrawableFromUrlUseCase: DownloadDrawableFromUrlUseCase,
-    context: Context
+    downloadDrawableFromUrlUseCase: DownloadDrawableFromUrlUseCase
 ): Flow<Mutation<PlaybackUiState>> = flatMapLatest {
     if (musicPlayer.tryResume()) emptyFlow()
     else map { PlaybackScreenAction.Play(it.streamable) }.playMutations(
         musicPlayer = musicPlayer,
-        downloadDrawableFromUrlUseCase = downloadDrawableFromUrlUseCase,
-        context = context
+        downloadDrawableFromUrlUseCase = downloadDrawableFromUrlUseCase
     )
 }
 
 private fun Flow<PlaybackScreenAction.Play>.playMutations(
     musicPlayer: MusicPlayerV2,
-    downloadDrawableFromUrlUseCase: DownloadDrawableFromUrlUseCase,
-    context: Context
+    downloadDrawableFromUrlUseCase: DownloadDrawableFromUrlUseCase
 ): Flow<Mutation<PlaybackUiState>> = mapLatestToManyMutations { (streamable) ->
     if (streamable.streamInfo.streamUrl == null) {
         val streamableType = when (streamable) {
@@ -174,7 +167,6 @@ private fun Flow<PlaybackScreenAction.Play>.playMutations(
 
     val downloadAlbumArtResult = downloadDrawableFromUrlUseCase.invoke(
         urlString = streamable.streamInfo.imageUrl,
-        context = context
     )
     if (downloadAlbumArtResult.isSuccess) {
         // getOrNull() can't be null because this line is executed

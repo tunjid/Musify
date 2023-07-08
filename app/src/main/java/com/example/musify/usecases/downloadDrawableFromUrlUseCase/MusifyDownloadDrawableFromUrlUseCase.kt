@@ -8,16 +8,18 @@ import coil.request.ErrorResult
 import coil.request.ImageRequest
 import coil.request.SuccessResult
 import com.example.musify.di.IODispatcher
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 class MusifyDownloadDrawableFromUrlUseCase @Inject constructor(
+    @ApplicationContext private val context: Context,
     @IODispatcher private val ioDispatcher: CoroutineDispatcher
 ) : DownloadDrawableFromUrlUseCase {
 
     override suspend fun invoke(
-        urlString: String, context: Context
+        urlString: String,
     ): Result<Drawable> = withContext(ioDispatcher) {
         val imageRequest = ImageRequest.Builder(context)
             .data(urlString)

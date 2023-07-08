@@ -1,27 +1,27 @@
 package com.example.musify.ui.screens.homescreen
 
-import android.app.Application
-import androidx.lifecycle.AndroidViewModel
+import android.content.Context
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.musify.data.repositories.homefeedrepository.HomeFeedRepository
 import com.example.musify.data.repositories.homefeedrepository.ISO6391LanguageCode
-import com.example.musify.di.MusifyApplication
 import com.example.musify.ui.screens.homescreen.greetingphrasegenerator.GreetingPhraseGenerator
-import com.example.musify.viewmodels.getCountryCode
+import com.example.musify.utils.countryCode
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 
 
 @HiltViewModel
 class HomeFeedViewModel @Inject constructor(
-    application: Application,
+    @ApplicationContext context: Context,
     greetingPhraseGenerator: GreetingPhraseGenerator,
     homeFeedRepository: HomeFeedRepository,
-) : AndroidViewModel(application) {
+) : ViewModel() {
     private val stateProducer =
         viewModelScope.homeScreenStateProducer(
-            countryCode = getCountryCode(),
-            languageCode = getApplication<MusifyApplication>().resources
+            countryCode = context.countryCode,
+            languageCode = context.resources
                 .configuration
                 .locale
                 .language

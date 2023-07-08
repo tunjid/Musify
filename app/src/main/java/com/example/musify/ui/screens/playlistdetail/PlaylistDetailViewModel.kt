@@ -1,23 +1,24 @@
 package com.example.musify.ui.screens.playlistdetail
 
-import android.app.Application
-import androidx.lifecycle.AndroidViewModel
+import android.content.Context
 import androidx.lifecycle.SavedStateHandle
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.musify.data.repositories.tracksrepository.TracksRepository
 import com.example.musify.ui.navigation.MusifyNavigationDestinations
 import com.example.musify.usecases.getCurrentlyPlayingTrackUseCase.GetCurrentlyPlayingTrackUseCase
-import com.example.musify.viewmodels.getCountryCode
+import com.example.musify.utils.countryCode
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 
 @HiltViewModel
 class PlaylistDetailViewModel @Inject constructor(
-    application: Application,
+    @ApplicationContext context: Context,
     savedStateHandle: SavedStateHandle,
     tracksRepository: TracksRepository,
     getCurrentlyPlayingTrackUseCase: GetCurrentlyPlayingTrackUseCase,
-) : AndroidViewModel(application) {
+) : ViewModel() {
     private val stateProducer =
         viewModelScope.playlistDetailStateProducer(
             playlistId = savedStateHandle[
@@ -35,7 +36,7 @@ class PlaylistDetailViewModel @Inject constructor(
             totalNumberOfTracks = savedStateHandle[
                 MusifyNavigationDestinations.PlaylistDetailScreen.NAV_ARG_NUMBER_OF_TRACKS
             ]!!,
-            countryCode = getCountryCode(),
+            countryCode = context.countryCode,
             tracksRepository = tracksRepository,
             getCurrentlyPlayingTrackUseCase = getCurrentlyPlayingTrackUseCase,
         )

@@ -23,6 +23,7 @@ import androidx.compose.material.SnackbarHost
 import androidx.compose.material.SnackbarHostState
 import androidx.compose.material.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
@@ -33,14 +34,19 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.compose.rememberNavController
+import com.example.musify.ui.dynamicTheme.dynamicbackgroundmodifier.LocalDynamicThemeManager
+import com.example.musify.ui.dynamicTheme.manager.MusifyDynamicThemeManager
 import com.example.musify.ui.navigation.MusifyBottomNavigationConnectedWithBackStack
 import com.example.musify.ui.navigation.MusifyBottomNavigationDestinations
 import com.example.musify.ui.navigation.MusifyNavigation
 import com.example.musify.ui.screens.homescreen.ExpandableMiniPlayerWithSnackbar
 import com.example.musify.ui.theme.MusifyTheme
+import com.example.musify.usecases.downloadDrawableFromUrlUseCase.MusifyDownloadDrawableFromUrlUseCase
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.Dispatchers
 
 @ExperimentalAnimationApi
 @ExperimentalMaterialApi
@@ -52,10 +58,20 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
         setContent {
-            MusifyTheme {
-                Surface(modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colors.background,
-                    content = { MusifyApp() })
+            CompositionLocalProvider(
+                LocalDynamicThemeManager provides MusifyDynamicThemeManager(
+                    downloadDrawableFromUrlUseCase = MusifyDownloadDrawableFromUrlUseCase(
+                        context = this,
+                        ioDispatcher = Dispatchers.IO
+                    ),
+                    defaultDispatcher = Dispatchers.IO
+                )
+            ) {
+                MusifyTheme {
+                    Surface(modifier = Modifier.fillMaxSize(),
+                        color = MaterialTheme.colors.background,
+                        content = { MusifyApp() })
+                }
             }
         }
     }

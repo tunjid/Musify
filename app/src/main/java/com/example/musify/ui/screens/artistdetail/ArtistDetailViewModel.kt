@@ -1,30 +1,30 @@
 package com.example.musify.ui.screens.artistdetail
 
-import android.app.Application
-import androidx.lifecycle.AndroidViewModel
+import android.content.Context
 import androidx.lifecycle.SavedStateHandle
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.musify.data.repositories.albumsrepository.AlbumsRepository
 import com.example.musify.data.repositories.tracksrepository.TracksRepository
 import com.example.musify.ui.navigation.MusifyNavigationDestinations
 import com.example.musify.usecases.getCurrentlyPlayingTrackUseCase.GetCurrentlyPlayingTrackUseCase
 import com.example.musify.usecases.getPlaybackLoadingStatusUseCase.GetPlaybackLoadingStatusUseCase
-import com.example.musify.viewmodels.getCountryCode
+import com.example.musify.utils.countryCode
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import java.net.URLDecoder
 import java.nio.charset.StandardCharsets
 import javax.inject.Inject
 
-
 @HiltViewModel
 class ArtistDetailViewModel @Inject constructor(
-    application: Application,
+    @ApplicationContext context: Context,
     savedStateHandle: SavedStateHandle,
     albumsRepository: AlbumsRepository,
     getCurrentlyPlayingTrackUseCase: GetCurrentlyPlayingTrackUseCase,
     getPlaybackLoadingStatusUseCase: GetPlaybackLoadingStatusUseCase,
     tracksRepository: TracksRepository,
-) : AndroidViewModel(application) {
+) : ViewModel() {
     private val stateProducer =
         viewModelScope.aristDetailStateProducer(
             artistId = savedStateHandle[
@@ -39,7 +39,7 @@ class ArtistDetailViewModel @Inject constructor(
                 ]!!,
                 StandardCharsets.UTF_8.toString()
             ),
-            countryCode = getCountryCode(),
+            countryCode = context.countryCode,
             albumsRepository = albumsRepository,
             getCurrentlyPlayingTrackUseCase = getCurrentlyPlayingTrackUseCase,
             getPlaybackLoadingStatusUseCase = getPlaybackLoadingStatusUseCase,
