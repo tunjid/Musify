@@ -24,6 +24,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flow
@@ -126,30 +127,27 @@ private fun Flow<SearchAction.Searches>.searchMutations(
         idFunction = SearchResult.AlbumSearchResult::id
     )
 
-    val artistsQuery =
-        SearchQueryType.ARTIST.contentFlow(
-            countryCode = countryCode,
-        )
+    val artistsQuery = SearchQueryType.ARTIST.contentFlow(
+        countryCode = countryCode,
+    )
     val artistsTiledList = artistsQuery.toTiledList(
         scope = scope,
         searchRepository = searchRepository,
         idFunction = SearchResult.ArtistSearchResult::id
     )
 
-    val episodesQuery =
-        SearchQueryType.EPISODE.contentFlow(
-            countryCode = countryCode,
-        )
+    val episodesQuery = SearchQueryType.EPISODE.contentFlow(
+        countryCode = countryCode,
+    )
     val episodesTiledList = episodesQuery.toTiledList(
         scope = scope,
         searchRepository = searchRepository,
         idFunction = SearchResult.EpisodeSearchResult::id
     )
 
-    val playlistsQuery =
-        SearchQueryType.PLAYLIST.contentFlow(
-            countryCode = countryCode,
-        )
+    val playlistsQuery = SearchQueryType.PLAYLIST.contentFlow(
+        countryCode = countryCode,
+    )
     val playlistsTiledList = playlistsQuery.toTiledList(
         scope = scope,
         searchRepository = searchRepository,
@@ -189,7 +187,7 @@ private fun Flow<SearchAction.Searches>.searchMutations(
     }
 
     // Collect from the backing flow and update searches as appropriate
-    collect { action ->
+    collectLatest { action ->
         when (action) {
             is SearchAction.Searches.LoadAround -> when (action.contentQuery?.type) {
                 SearchQueryType.ALBUM -> albumsQuery.value = action.contentQuery
@@ -201,37 +199,33 @@ private fun Flow<SearchAction.Searches>.searchMutations(
                 null -> Unit
             }
 
+            // Only pages in the pager will have their search queries executed, but the queries
+            // for offscreen pages will be saved to begin execution when they're visible
             is SearchAction.Searches.Search -> {
-                albumsQuery.value =
-                    SearchQueryType.ALBUM.contentQueryFor(
-                        searchQuery = action.searchQuery,
-                        countryCode = countryCode,
-                    )
-                artistsQuery.value =
-                    SearchQueryType.ARTIST.contentQueryFor(
-                        searchQuery = action.searchQuery,
-                        countryCode = countryCode,
-                    )
-                episodesQuery.value =
-                    SearchQueryType.EPISODE.contentQueryFor(
-                        searchQuery = action.searchQuery,
-                        countryCode = countryCode,
-                    )
-                playlistsQuery.value =
-                    SearchQueryType.PLAYLIST.contentQueryFor(
-                        searchQuery = action.searchQuery,
-                        countryCode = countryCode,
-                    )
-                showsQuery.value =
-                    SearchQueryType.SHOW.contentQueryFor(
-                        searchQuery = action.searchQuery,
-                        countryCode = countryCode,
-                    )
-                tracksQuery.value =
-                    SearchQueryType.TRACK.contentQueryFor(
-                        searchQuery = action.searchQuery,
-                        countryCode = countryCode,
-                    )
+                albumsQuery.value = SearchQueryType.ALBUM.contentQueryFor(
+                    searchQuery = action.searchQuery,
+                    countryCode = countryCode,
+                )
+                artistsQuery.value = SearchQueryType.ARTIST.contentQueryFor(
+                    searchQuery = action.searchQuery,
+                    countryCode = countryCode,
+                )
+                episodesQuery.value = SearchQueryType.EPISODE.contentQueryFor(
+                    searchQuery = action.searchQuery,
+                    countryCode = countryCode,
+                )
+                playlistsQuery.value = SearchQueryType.PLAYLIST.contentQueryFor(
+                    searchQuery = action.searchQuery,
+                    countryCode = countryCode,
+                )
+                showsQuery.value = SearchQueryType.SHOW.contentQueryFor(
+                    searchQuery = action.searchQuery,
+                    countryCode = countryCode,
+                )
+                tracksQuery.value = SearchQueryType.TRACK.contentQueryFor(
+                    searchQuery = action.searchQuery,
+                    countryCode = countryCode,
+                )
             }
         }
     }

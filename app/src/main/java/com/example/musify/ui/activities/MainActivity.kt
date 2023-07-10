@@ -146,7 +146,7 @@ private fun MusifyApp() {
                                 enter = fadeIn() + slideInVertically { it },
                                 exit = fadeOut() + slideOutVertically { -it }
                             ),
-                        streamable = miniPlayerStreamable!!,
+                        streamable = streamable,
                         onPauseButtonClicked = { actions(PlaybackScreenAction.Pause) },
                         onPlayButtonClicked = { actions(PlaybackScreenAction.Toggle(it)) },
                         isPlaybackPaused = isPlaybackPaused,
