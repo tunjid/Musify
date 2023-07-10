@@ -69,8 +69,8 @@ fun CoroutineScope.playlistDetailStateProducer(
 )
 
 private fun GetCurrentlyPlayingTrackUseCase.playingTrackMutations(): Flow<Mutation<PlaylistDetailUiState>> =
-    currentlyPlayingTrackStream.map {
-        mutation { copy(currentlyPlayingTrack = it) }
+    currentlyPlayingTrackStream.mapToMutation {
+        copy(currentlyPlayingTrack = it)
     }
 
 context(SuspendingStateHolder<PlaylistDetailUiState>)
