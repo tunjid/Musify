@@ -61,7 +61,7 @@ fun CoroutineScope.podcastShowDetailStateProducer(
     actionTransform = { actions ->
         actions.toMutationStream {
             when (val action = type()) {
-                is PodcastShowDetailAction.LoadAround -> action.flow.episodeMutations(
+                is PodcastShowDetailAction.LoadAround -> action.flow.episodeLoadMutations(
                     podcastsRepository = podcastsRepository
                 )
 
@@ -117,7 +117,7 @@ private fun Flow<PodcastShowDetailAction.Retry>.retryMutations(
     }
 
 context(SuspendingStateHolder<PodcastShowDetailUiState>)
-private suspend fun Flow<PodcastShowDetailAction.LoadAround>.episodeMutations(
+private suspend fun Flow<PodcastShowDetailAction.LoadAround>.episodeLoadMutations(
     podcastsRepository: PodcastsRepository
 ): Flow<Mutation<PodcastShowDetailUiState>> =
     map { it.podcastQuery ?: state().currentQuery }
