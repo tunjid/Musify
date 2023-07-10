@@ -6,6 +6,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.musify.data.repositories.albumsrepository.AlbumsRepository
 import com.example.musify.data.repositories.tracksrepository.TracksRepository
+import com.example.musify.data.utils.NetworkMonitor
 import com.example.musify.ui.navigation.MusifyNavigationDestinations
 import com.example.musify.usecases.getCurrentlyPlayingTrackUseCase.GetCurrentlyPlayingTrackUseCase
 import com.example.musify.usecases.getPlaybackLoadingStatusUseCase.GetPlaybackLoadingStatusUseCase
@@ -20,6 +21,7 @@ import javax.inject.Inject
 class ArtistDetailViewModel @Inject constructor(
     @ApplicationContext context: Context,
     savedStateHandle: SavedStateHandle,
+    networkMonitor: NetworkMonitor,
     albumsRepository: AlbumsRepository,
     getCurrentlyPlayingTrackUseCase: GetCurrentlyPlayingTrackUseCase,
     getPlaybackLoadingStatusUseCase: GetPlaybackLoadingStatusUseCase,
@@ -40,6 +42,7 @@ class ArtistDetailViewModel @Inject constructor(
                 StandardCharsets.UTF_8.toString()
             ),
             countryCode = context.countryCode,
+            networkMonitor = networkMonitor,
             albumsRepository = albumsRepository,
             getCurrentlyPlayingTrackUseCase = getCurrentlyPlayingTrackUseCase,
             getPlaybackLoadingStatusUseCase = getPlaybackLoadingStatusUseCase,

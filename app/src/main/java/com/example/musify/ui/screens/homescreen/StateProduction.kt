@@ -3,6 +3,8 @@ package com.example.musify.ui.screens.homescreen
 import com.example.musify.data.repositories.homefeedrepository.HomeFeedRepository
 import com.example.musify.data.repositories.homefeedrepository.ISO6391LanguageCode
 import com.example.musify.data.utils.FetchedResource
+import com.example.musify.data.utils.NetworkMonitor
+import com.example.musify.data.utils.onConnected
 import com.example.musify.domain.HomeFeedCarousel
 import com.example.musify.domain.HomeFeedCarouselCardInfo
 import com.example.musify.domain.MusifyErrorType
@@ -15,7 +17,7 @@ import com.tunjid.mutator.coroutines.actionStateFlowProducer
 import com.tunjid.mutator.coroutines.toMutationStream
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.flatMapLatest
-import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.merge
 
 sealed class HomeAction {
@@ -37,6 +39,7 @@ enum class HomeFeedLoadingState { IDLE, LOADING, ERROR }
 fun CoroutineScope.homeScreenStateProducer(
     countryCode: String,
     languageCode: ISO6391LanguageCode,
+    networkMonitor: NetworkMonitor,
     greetingPhraseGenerator: GreetingPhraseGenerator,
     homeFeedRepository: HomeFeedRepository,
 ) = actionStateFlowProducer<HomeAction, HomeUiState>(
@@ -46,14 +49,17 @@ fun CoroutineScope.homeScreenStateProducer(
     mutationFlows = listOf(
         homeFeedRepository.albumReleaseMutations(
             countryCode = countryCode,
+            networkMonitor = networkMonitor,
         ),
         homeFeedRepository.featuredPlaylistMutations(
             languageCode = languageCode,
             countryCode = countryCode,
+            networkMonitor = networkMonitor,
         ),
         homeFeedRepository.playlistCategoryMutations(
             languageCode = languageCode,
             countryCode = countryCode,
+            networkMonitor = networkMonitor,
         ),
     ),
     actionTransform = { actions ->
@@ -63,14 +69,17 @@ fun CoroutineScope.homeScreenStateProducer(
                     listOf(
                         homeFeedRepository.albumReleaseMutations(
                             countryCode = countryCode,
+                            networkMonitor = networkMonitor,
                         ),
                         homeFeedRepository.featuredPlaylistMutations(
                             languageCode = languageCode,
                             countryCode = countryCode,
+                            networkMonitor = networkMonitor,
                         ),
                         homeFeedRepository.playlistCategoryMutations(
                             languageCode = languageCode,
                             countryCode = countryCode,
+                            networkMonitor = networkMonitor,
                         ),
                     ).merge()
                 }
@@ -81,47 +90,46 @@ fun CoroutineScope.homeScreenStateProducer(
 
 private fun HomeFeedRepository.playlistCategoryMutations(
     countryCode: String,
-    languageCode: ISO6391LanguageCode
-) = flow {
-    emit(
-        fetchPlaylistsBasedOnCategoriesAvailableForCountry(
-            countryCode = countryCode, languageCode = languageCode
-        )
-            .dataOrNull()
-            ?.map(PlaylistsForCategory::toHomeFeedCarousel)
-            .toMutation()
+    languageCode: ISO6391LanguageCode,
+    networkMonitor: NetworkMonitor,
+) = networkMonitor.onConnected().map {
+    fetchPlaylistsBasedOnCategoriesAvailableForCountry(
+        countryCode = countryCode, languageCode = languageCode
     )
+        .dataOrNull()
+        ?.map(PlaylistsForCategory::toHomeFeedCarousel)
+        .toMutation()
 }
 
 private fun HomeFeedRepository.featuredPlaylistMutations(
     countryCode: String,
-    languageCode: ISO6391LanguageCode
-) = flow {
-    emit(
-        fetchFeaturedPlaylistsForCurrentTimeStamp(
-            timestampMillis = System.currentTimeMillis(),
-            countryCode = countryCode,
-            languageCode = languageCode
-        )
-            .dataOrNull()
-            ?.playlists
-            ?.map<SearchResult, HomeFeedCarouselCardInfo>(::toHomeFeedCarouselCardInfo)
-            ?.let { homeFeedCarouselCardInfoList ->
-                listOf(
-                    HomeFeedCarousel(
-                        id = "Featured Playlists",
-                        title = "Featured Playlists",
-                        associatedCards = homeFeedCarouselCardInfoList
-                    )
-                )
-            }.toMutation()
+    languageCode: ISO6391LanguageCode,
+    networkMonitor: NetworkMonitor,
+) = networkMonitor.onConnected().map {
+    fetchFeaturedPlaylistsForCurrentTimeStamp(
+        timestampMillis = System.currentTimeMillis(),
+        countryCode = countryCode,
+        languageCode = languageCode
     )
+        .dataOrNull()
+        ?.playlists
+        ?.map<SearchResult, HomeFeedCarouselCardInfo>(::toHomeFeedCarouselCardInfo)
+        ?.let { homeFeedCarouselCardInfoList ->
+            listOf(
+                HomeFeedCarousel(
+                    id = "Featured Playlists",
+                    title = "Featured Playlists",
+                    associatedCards = homeFeedCarouselCardInfoList
+                )
+            )
+        }.toMutation()
 }
 
 private fun HomeFeedRepository.albumReleaseMutations(
-    countryCode: String
-) = flow {
-    emit(
+    countryCode: String,
+    networkMonitor: NetworkMonitor,
+) = networkMonitor.onConnected()
+    .map {
         fetchNewlyReleasedAlbums(countryCode)
             .dataOrNull()
             ?.map<SearchResult, HomeFeedCarouselCardInfo>(::toHomeFeedCarouselCardInfo)
@@ -134,8 +142,7 @@ private fun HomeFeedRepository.albumReleaseMutations(
                     )
                 )
             }.toMutation()
-    )
-}
+    }
 
 private fun <FetchedResourceType> FetchedResource<FetchedResourceType, MusifyErrorType>.dataOrNull() =
     when (this) {

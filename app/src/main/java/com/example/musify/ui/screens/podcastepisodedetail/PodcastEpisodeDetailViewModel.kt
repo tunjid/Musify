@@ -5,6 +5,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.musify.data.repositories.podcastsrepository.PodcastsRepository
+import com.example.musify.data.utils.NetworkMonitor
 import com.example.musify.ui.navigation.MusifyNavigationDestinations
 import com.example.musify.usecases.getCurrentlyPlayingEpisodePlaybackStateUseCase.GetCurrentlyPlayingEpisodePlaybackStateUseCase
 import com.example.musify.utils.countryCode
@@ -15,8 +16,9 @@ import javax.inject.Inject
 @HiltViewModel
 class PodcastEpisodeDetailViewModel @Inject constructor(
     @ApplicationContext context: Context,
-    podcastsRepository: PodcastsRepository,
     savedStateHandle: SavedStateHandle,
+    networkMonitor: NetworkMonitor,
+    podcastsRepository: PodcastsRepository,
     getCurrentlyPlayingEpisodePlaybackStateUseCase: GetCurrentlyPlayingEpisodePlaybackStateUseCase,
 ) : ViewModel() {
     private val stateProducer =
@@ -25,6 +27,7 @@ class PodcastEpisodeDetailViewModel @Inject constructor(
                 MusifyNavigationDestinations.PodcastEpisodeDetailScreen.NAV_ARG_PODCAST_EPISODE_ID
             ]!!,
             countryCode = context.countryCode,
+            networkMonitor = networkMonitor,
             podcastsRepository = podcastsRepository,
             getCurrentlyPlayingEpisodePlaybackStateUseCase = getCurrentlyPlayingEpisodePlaybackStateUseCase
         )

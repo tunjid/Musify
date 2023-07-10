@@ -2,6 +2,8 @@ package com.example.musify.ui.screens.podcastepisodedetail
 
 import com.example.musify.data.repositories.podcastsrepository.PodcastsRepository
 import com.example.musify.data.utils.FetchedResource
+import com.example.musify.data.utils.NetworkMonitor
+import com.example.musify.data.utils.onConnected
 import com.example.musify.domain.PodcastEpisode
 import com.example.musify.domain.equalsIgnoringImageSize
 import com.example.musify.usecases.getCurrentlyPlayingEpisodePlaybackStateUseCase.GetCurrentlyPlayingEpisodePlaybackStateUseCase
@@ -12,7 +14,7 @@ import com.tunjid.mutator.coroutines.toMutationStream
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flatMapLatest
-import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.map
 
 sealed class PodcastEpisodeAction {
     object Retry : PodcastEpisodeAction()
@@ -32,6 +34,7 @@ val PodcastEpisodeDetailUiState.isEpisodeCurrentlyPlaying
 fun CoroutineScope.podcastEpisodeDetailStateProducer(
     episodeId: String,
     countryCode: String,
+    networkMonitor: NetworkMonitor,
     podcastsRepository: PodcastsRepository,
     getCurrentlyPlayingEpisodePlaybackStateUseCase: GetCurrentlyPlayingEpisodePlaybackStateUseCase
 ) = actionStateFlowProducer<PodcastEpisodeAction, PodcastEpisodeDetailUiState>(
@@ -40,7 +43,8 @@ fun CoroutineScope.podcastEpisodeDetailStateProducer(
         getCurrentlyPlayingEpisodePlaybackStateUseCase.playbackStateMutations(),
         podcastsRepository.fetchEpisodeMutations(
             episodeId = episodeId,
-            countryCode = countryCode
+            countryCode = countryCode,
+            networkMonitor = networkMonitor,
         )
     ),
     actionTransform = { actions ->
@@ -49,7 +53,8 @@ fun CoroutineScope.podcastEpisodeDetailStateProducer(
                 is PodcastEpisodeAction.Retry -> action.flow.flatMapLatest {
                     podcastsRepository.fetchEpisodeMutations(
                         episodeId = episodeId,
-                        countryCode = countryCode
+                        countryCode = countryCode,
+                        networkMonitor = networkMonitor,
                     )
                 }
             }
@@ -59,8 +64,8 @@ fun CoroutineScope.podcastEpisodeDetailStateProducer(
 
 private fun GetCurrentlyPlayingEpisodePlaybackStateUseCase.playbackStateMutations(): Flow<Mutation<PodcastEpisodeDetailUiState>> =
     currentlyPlayingEpisodePlaybackStateStream
-        .mapToMutation {
-            when (it) {
+        .mapToMutation { playbackState ->
+            when (playbackState) {
                 is GetCurrentlyPlayingEpisodePlaybackStateUseCase.PlaybackState.Paused,
                 is GetCurrentlyPlayingEpisodePlaybackStateUseCase.PlaybackState.Ended -> copy(
                     currentlyPlayingEpisode = null
@@ -76,7 +81,7 @@ private fun GetCurrentlyPlayingEpisodePlaybackStateUseCase.playbackStateMutation
                     // flow sends it's first emission. This makes it impossible
                     // to compare this.podcastEpisode and it.playingEpisode.
                     // Therefore, assign the property to a state variable.
-                    currentlyPlayingEpisode = it.playingEpisode
+                    currentlyPlayingEpisode = playbackState.playingEpisode
                 )
             }
         }
@@ -84,19 +89,25 @@ private fun GetCurrentlyPlayingEpisodePlaybackStateUseCase.playbackStateMutation
 private fun PodcastsRepository.fetchEpisodeMutations(
     episodeId: String,
     countryCode: String,
-): Flow<Mutation<PodcastEpisodeDetailUiState>> = flow {
-    emit {
-        copy(loadingState = PodcastEpisodeDetailUiState.LoadingState.LOADING)
-    }
-    val fetchedResource = fetchPodcastEpisode(
-        episodeId = episodeId,
-        countryCode = countryCode
-    )
-    val episode = if (fetchedResource is FetchedResource.Success) fetchedResource.data else null
-    emit {
-        copy(
-            podcastEpisode = episode,
-            loadingState = if (episode == null) PodcastEpisodeDetailUiState.LoadingState.ERROR else PodcastEpisodeDetailUiState.LoadingState.IDLE
-        )
-    }
-}
+    networkMonitor: NetworkMonitor,
+): Flow<Mutation<PodcastEpisodeDetailUiState>> =
+    networkMonitor.onConnected()
+        .map {
+            fetchPodcastEpisode(
+                episodeId = episodeId,
+                countryCode = countryCode
+            )
+        }
+        .mapToMutation { fetchedResource ->
+            val episode = when (fetchedResource) {
+                is FetchedResource.Success -> fetchedResource.data
+                else -> null
+            }
+            copy(
+                podcastEpisode = episode,
+                loadingState = when (episode) {
+                    null -> PodcastEpisodeDetailUiState.LoadingState.ERROR
+                    else -> PodcastEpisodeDetailUiState.LoadingState.IDLE
+                }
+            )
+        }

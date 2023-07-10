@@ -6,6 +6,8 @@ import com.example.musify.data.repositories.tracksrepository.TracksRepository
 import com.example.musify.data.tiling.Page
 import com.example.musify.data.tiling.toTiledList
 import com.example.musify.data.utils.FetchedResource
+import com.example.musify.data.utils.NetworkMonitor
+import com.example.musify.data.utils.onConnected
 import com.example.musify.domain.SearchResult
 import com.example.musify.usecases.getCurrentlyPlayingTrackUseCase.GetCurrentlyPlayingTrackUseCase
 import com.example.musify.usecases.getPlaybackLoadingStatusUseCase.GetPlaybackLoadingStatusUseCase
@@ -19,7 +21,6 @@ import com.tunjid.tiler.distinctBy
 import com.tunjid.tiler.emptyTiledList
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 
 sealed class ArtistDetailAction {
@@ -51,6 +52,7 @@ fun CoroutineScope.aristDetailStateProducer(
     artistName: String,
     artistImageUrlString: String,
     countryCode: String,
+    networkMonitor: NetworkMonitor,
     albumsRepository: AlbumsRepository,
     getCurrentlyPlayingTrackUseCase: GetCurrentlyPlayingTrackUseCase,
     getPlaybackLoadingStatusUseCase: GetPlaybackLoadingStatusUseCase,
@@ -70,7 +72,8 @@ fun CoroutineScope.aristDetailStateProducer(
         getPlaybackLoadingStatusUseCase.loadingStatusMutations(),
         tracksRepository.popularTrackMutations(
             artistId = artistId,
-            countryCode = countryCode
+            countryCode = countryCode,
+            networkMonitor = networkMonitor
         )
     ),
     actionTransform = { actions ->
@@ -106,29 +109,30 @@ private fun GetPlaybackLoadingStatusUseCase.loadingStatusMutations(): Flow<Mutat
 
 private fun TracksRepository.popularTrackMutations(
     artistId: String,
-    countryCode: String
-): Flow<Mutation<ArtistDetailUiState>> = flow {
-    val fetchResult = fetchTopTenTracksForArtistWithId(
-        artistId = artistId,
-        countryCode = countryCode
-    )
-    when (fetchResult) {
-        is FetchedResource.Failure -> emit {
-            copy(
+    countryCode: String,
+    networkMonitor: NetworkMonitor,
+): Flow<Mutation<ArtistDetailUiState>> = networkMonitor
+    .onConnected()
+    .map {
+        fetchTopTenTracksForArtistWithId(
+            artistId = artistId,
+            countryCode = countryCode
+        )
+    }
+    .mapToMutation { fetchResult ->
+        when (fetchResult) {
+            is FetchedResource.Failure -> copy(
                 loadingState = ArtistDetailScreenLoadingState.Error(
                     "Error loading tracks, please check internet connection"
                 )
             )
-        }
 
-        is FetchedResource.Success -> emit {
-            copy(
+            is FetchedResource.Success -> copy(
                 popularTracks = fetchResult.data,
                 loadingState = ArtistDetailScreenLoadingState.Idle
             )
         }
     }
-}
 
 context(SuspendingStateHolder<ArtistDetailUiState>)
 private suspend fun Flow<ArtistDetailAction.LoadAround>.tracksMutations(
