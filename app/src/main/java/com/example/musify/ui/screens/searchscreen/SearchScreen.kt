@@ -126,7 +126,7 @@ fun SearchScreen(
                 true -> HorizontalPager(
                     pageCount = SearchFilter.values().size,
                     state = pagerState,
-                    beyondBoundsPageCount = 1,
+                    beyondBoundsPageCount = 0,
                 ) { page ->
                     SearchQueryList(
                         isOnline = isOnline,
@@ -152,6 +152,7 @@ fun SearchScreen(
 
 @ExperimentalLayoutApi
 @ExperimentalMaterialApi
+@ExperimentalFoundationApi
 @Composable
 private fun SearchQueryList(
     isOnline: Boolean,

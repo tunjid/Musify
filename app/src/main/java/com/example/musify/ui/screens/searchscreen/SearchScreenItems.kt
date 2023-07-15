@@ -1,5 +1,6 @@
 package com.example.musify.ui.screens.searchscreen
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -24,9 +25,12 @@ import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -61,6 +65,7 @@ private val CardBackgroundColor @Composable get() = Color.Transparent
 private val CardShape = RectangleShape
 
 @ExperimentalMaterialApi
+@ExperimentalFoundationApi
 @Composable
 fun SearchTrackListItems(
     isOnline: Boolean,
@@ -79,6 +84,7 @@ fun SearchTrackListItems(
         key = SearchResult.TrackSearchResult::id
     ) { track ->
         MusifyCompactTrackCard(
+            modifier = Modifier.animateItemPlacement(),
             backgroundColor = CardBackgroundColor,
             shape = CardShape,
             track = track,
@@ -89,6 +95,7 @@ fun SearchTrackListItems(
 }
 
 @ExperimentalMaterialApi
+@ExperimentalFoundationApi
 @Composable
 fun SearchAlbumListItems(
     isOnline: Boolean,
@@ -106,6 +113,7 @@ fun SearchAlbumListItems(
         key = SearchResult.AlbumSearchResult::id
     ) { album ->
         MusifyCompactListItemCard(
+            modifier = Modifier.animateItemPlacement(),
             backgroundColor = CardBackgroundColor,
             shape = CardShape,
             cardType = ListItemCardType.ALBUM,
@@ -120,6 +128,7 @@ fun SearchAlbumListItems(
 }
 
 @ExperimentalMaterialApi
+@ExperimentalFoundationApi
 @Composable
 fun SearchArtistListItems(
     isOnline: Boolean,
@@ -153,6 +162,7 @@ fun SearchArtistListItems(
 }
 
 @ExperimentalMaterialApi
+@ExperimentalFoundationApi
 @Composable
 fun SearchPlaylistListItems(
     isOnline: Boolean,
@@ -171,6 +181,7 @@ fun SearchPlaylistListItems(
         key = SearchResult.PlaylistSearchResult::id
     ) { playlist ->
         MusifyCompactListItemCard(
+            modifier = Modifier.animateItemPlacement(),
             backgroundColor = CardBackgroundColor,
             shape = CardShape,
             cardType = ListItemCardType.PLAYLIST,
@@ -186,6 +197,7 @@ fun SearchPlaylistListItems(
 }
 
 @ExperimentalMaterialApi
+@ExperimentalFoundationApi
 @Composable
 fun SearchPodcastListItems(
     isOnline: Boolean,
@@ -199,7 +211,7 @@ fun SearchPodcastListItems(
     val rowLazyState = rememberLazyListState()
     rowLazyState.PivotedTilingEffect(
         items = podcasts,
-        onQueryChanged = { if (it != null) onQueryChanged(it) }
+        onQueryChanged = { onQueryChanged(it) }
     )
     TiledLazyColumn(
         isOnline = isOnline,
@@ -239,6 +251,7 @@ fun SearchPodcastListItems(
         }
         itemsWithEmptyListContent(items) { episode ->
             EpisodeListCard(
+                modifier = Modifier.animateItemPlacement(),
                 episodeSearchResult = episode,
                 onClick = { onEpisodeItemClicked(episode) }
             )
@@ -297,6 +310,7 @@ private fun <Item> TiledLazyColumn(
     onQueryChanged: (ContentQuery?) -> Unit,
     content: LazyListScope.(TiledList<ContentQuery, Item>) -> Unit
 ) {
+    var lastQueryText by remember { mutableStateOf<String?>(null) }
     val lazyListState = rememberLazyListState()
     val items by itemsFlow.collectAsState()
     Box(modifier = Modifier.fillMaxSize()) {
@@ -327,4 +341,15 @@ private fun <Item> TiledLazyColumn(
         items = items,
         onQueryChanged = onQueryChanged
     )
+
+    // Scroll to top if the search text has changed
+    LaunchedEffect(items, lastQueryText) {
+        if (items.isEmpty()) return@LaunchedEffect
+
+        val latestQueryText = items.queryAt(0).searchQuery
+        if (lastQueryText == latestQueryText) return@LaunchedEffect
+
+        lazyListState.animateScrollToItem(0)
+        lastQueryText = latestQueryText
+    }
 }

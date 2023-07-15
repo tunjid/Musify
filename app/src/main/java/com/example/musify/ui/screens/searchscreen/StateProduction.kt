@@ -187,7 +187,7 @@ private fun Flow<SearchAction.Searches>.searchMutations(
     }
 
     // Collect from the backing flow and update searches as appropriate
-    collectLatest { action ->
+    collect { action ->
         when (action) {
             is SearchAction.Searches.LoadAround -> when (action.contentQuery?.type) {
                 SearchQueryType.ALBUM -> albumsQuery.value = action.contentQuery
@@ -235,11 +235,13 @@ private inline fun <reified T : SearchResult> MutableStateFlow<ContentQuery>.toT
     scope: CoroutineScope,
     searchRepository: SearchRepository,
     crossinline idFunction: (T) -> Any
-): StateFlow<TiledList<ContentQuery, T>> =
-    debounce {
+): StateFlow<TiledList<ContentQuery, T>> {
+    val startPage = value.page
+    return debounce {
         // Don't debounce the If its the first character or more is being loaded
-        if (it.searchQuery.length < 2 || it.page.offset != 0) 0
-        else 500
+        if (it.searchQuery.length < 2 || it.page.offset != startPage.offset) 0
+        // Debounce for key input
+        else 300
     }.toTiledList(
         startQuery = value,
         queryFor = { copy(page = it) },
@@ -250,11 +252,18 @@ private inline fun <reified T : SearchResult> MutableStateFlow<ContentQuery>.toT
         }
     )
         .map { it.distinctBy(idFunction) }
+        .debounce {
+            // If empty, the search query might have just changed.
+            // Allow items to be fetched for item position animations
+            if (it.isEmpty()) 300L
+            else 0L
+        }
         .stateIn(
             scope = scope,
             started = SharingStarted.WhileSubscribed(5_000),
             initialValue = emptyTiledList()
         )
+}
 
 private fun SearchQueryType.contentQueryFor(
     searchQuery: String,
