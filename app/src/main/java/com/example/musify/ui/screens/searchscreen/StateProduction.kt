@@ -19,12 +19,13 @@ import com.tunjid.mutator.coroutines.toMutationStream
 import com.tunjid.tiler.TiledList
 import com.tunjid.tiler.distinctBy
 import com.tunjid.tiler.emptyTiledList
+import com.tunjid.tiler.map
+import com.tunjid.tiler.tiledListOf
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flow
@@ -60,13 +61,31 @@ data class SearchUiState(
     ),
 )
 
+sealed class SearchItem<out T : SearchResult> {
+    object Empty : SearchItem<Nothing>()
+
+    data class Loaded<T : SearchResult>(val result: T) : SearchItem<T>()
+}
+
+val SearchItem<*>.id
+    get() = when (this) {
+        SearchItem.Empty -> "Empty"
+        is SearchItem.Loaded -> result.id
+    }
+
+val <T : SearchResult> List<SearchItem<T>>.loadedItem: T?
+    get() = when (val first = firstOrNull()) {
+        null, SearchItem.Empty -> null
+        is SearchItem.Loaded -> first.result
+    }
+
 data class SearchTiledListFlows(
-    val albumTiledListFlow: StateFlow<TiledList<ContentQuery, SearchResult.AlbumSearchResult>>,
-    val artistTiledListFLow: StateFlow<TiledList<ContentQuery, SearchResult.ArtistSearchResult>>,
-    val trackTiledListFlow: StateFlow<TiledList<ContentQuery, SearchResult.TrackSearchResult>>,
-    val playlistTiledListFlow: StateFlow<TiledList<ContentQuery, SearchResult.PlaylistSearchResult>>,
-    val podcastTiledListFlow: StateFlow<TiledList<ContentQuery, SearchResult.PodcastSearchResult>>,
-    val episodeTiledListFlow: StateFlow<TiledList<ContentQuery, SearchResult.EpisodeSearchResult>>,
+    val albumTiledListFlow: StateFlow<TiledList<ContentQuery, SearchItem<SearchResult.AlbumSearchResult>>>,
+    val artistTiledListFLow: StateFlow<TiledList<ContentQuery, SearchItem<SearchResult.ArtistSearchResult>>>,
+    val trackTiledListFlow: StateFlow<TiledList<ContentQuery, SearchItem<SearchResult.TrackSearchResult>>>,
+    val playlistTiledListFlow: StateFlow<TiledList<ContentQuery, SearchItem<SearchResult.PlaylistSearchResult>>>,
+    val podcastTiledListFlow: StateFlow<TiledList<ContentQuery, SearchItem<SearchResult.PodcastSearchResult>>>,
+    val episodeTiledListFlow: StateFlow<TiledList<ContentQuery, SearchItem<SearchResult.EpisodeSearchResult>>>,
 )
 
 fun CoroutineScope.searchStateProducer(
@@ -121,55 +140,49 @@ private fun Flow<SearchAction.Searches>.searchMutations(
     val albumsQuery = SearchQueryType.ALBUM.contentFlow(
         countryCode = countryCode,
     )
-    val albumsTiledList = albumsQuery.toTiledList(
+    val albumsTiledList = albumsQuery.toTiledList<SearchResult.AlbumSearchResult>(
         scope = scope,
-        searchRepository = searchRepository,
-        idFunction = SearchResult.AlbumSearchResult::id
+        searchRepository = searchRepository
     )
 
     val artistsQuery = SearchQueryType.ARTIST.contentFlow(
         countryCode = countryCode,
     )
-    val artistsTiledList = artistsQuery.toTiledList(
+    val artistsTiledList = artistsQuery.toTiledList<SearchResult.ArtistSearchResult>(
         scope = scope,
-        searchRepository = searchRepository,
-        idFunction = SearchResult.ArtistSearchResult::id
+        searchRepository = searchRepository
     )
 
     val episodesQuery = SearchQueryType.EPISODE.contentFlow(
         countryCode = countryCode,
     )
-    val episodesTiledList = episodesQuery.toTiledList(
+    val episodesTiledList = episodesQuery.toTiledList<SearchResult.EpisodeSearchResult>(
         scope = scope,
-        searchRepository = searchRepository,
-        idFunction = SearchResult.EpisodeSearchResult::id
+        searchRepository = searchRepository
     )
 
     val playlistsQuery = SearchQueryType.PLAYLIST.contentFlow(
         countryCode = countryCode,
     )
-    val playlistsTiledList = playlistsQuery.toTiledList(
+    val playlistsTiledList = playlistsQuery.toTiledList<SearchResult.PlaylistSearchResult>(
         scope = scope,
-        searchRepository = searchRepository,
-        idFunction = SearchResult.PlaylistSearchResult::id
+        searchRepository = searchRepository
     )
 
     val showsQuery = SearchQueryType.SHOW.contentFlow(
         countryCode = countryCode,
     )
-    val showsTiledList = showsQuery.toTiledList(
+    val showsTiledList = showsQuery.toTiledList<SearchResult.PodcastSearchResult>(
         scope = scope,
-        searchRepository = searchRepository,
-        idFunction = SearchResult.PodcastSearchResult::id
+        searchRepository = searchRepository
     )
 
     val tracksQuery = SearchQueryType.TRACK.contentFlow(
         countryCode = countryCode,
     )
-    val trackTiledList = tracksQuery.toTiledList(
+    val trackTiledList = tracksQuery.toTiledList<SearchResult.TrackSearchResult>(
         scope = scope,
-        searchRepository = searchRepository,
-        idFunction = SearchResult.TrackSearchResult::id
+        searchRepository = searchRepository
     )
 
     // Emit the tiled item state flows first
@@ -233,9 +246,8 @@ private fun Flow<SearchAction.Searches>.searchMutations(
 
 private inline fun <reified T : SearchResult> MutableStateFlow<ContentQuery>.toTiledList(
     scope: CoroutineScope,
-    searchRepository: SearchRepository,
-    crossinline idFunction: (T) -> Any
-): StateFlow<TiledList<ContentQuery, T>> {
+    searchRepository: SearchRepository
+): StateFlow<TiledList<ContentQuery, SearchItem<T>>> {
     val startPage = value.page
     return debounce {
         // Don't debounce the If its the first character or more is being loaded
@@ -251,11 +263,16 @@ private inline fun <reified T : SearchResult> MutableStateFlow<ContentQuery>.toT
                 .map<SearchResults, List<T>>(SearchResults::itemsFor)
         }
     )
-        .map { it.distinctBy(idFunction) }
-        .debounce {
+        .map { tiledItems ->
+            if (tiledItems.isEmpty()) tiledListOf(value to SearchItem.Empty)
+            else tiledItems
+                .distinctBy(SearchResult::id)
+                .map { SearchItem.Loaded(it) }
+        }
+        .debounce { tiledItems ->
             // If empty, the search query might have just changed.
             // Allow items to be fetched for item position animations
-            if (it.isEmpty()) 300L
+            if (tiledItems.first() is SearchItem.Empty) 350L
             else 0L
         }
         .stateIn(

@@ -24,7 +24,6 @@ import androidx.compose.ui.unit.dp
  * styling of the both the [title] and [subtitle].
  * @param modifier the modifier to be applied to the composable.
  */
-@Deprecated(message = "Use the other overload.")
 @Composable
 fun DefaultMusifyErrorMessage(
     title: String,
@@ -50,11 +49,6 @@ fun DefaultMusifyErrorMessage(
             textAlign = TextAlign.Center
         )
         Spacer(modifier = Modifier.size(8.dp))
-        OutlinedButton(
-            onClick = {},
-            shape = RoundedCornerShape(50),
-            content = { Text(text = "Retry") }
-        )
     }
 }
 

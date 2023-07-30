@@ -32,6 +32,7 @@ import com.example.musify.ui.screens.searchscreen.SearchAction
 import com.example.musify.ui.screens.searchscreen.SearchFilter
 import com.example.musify.ui.screens.searchscreen.SearchScreen
 import com.example.musify.ui.screens.searchscreen.SearchViewModel
+import com.example.musify.ui.screens.searchscreen.loadedItem
 
 @ExperimentalAnimationApi
 @ExperimentalMaterialApi
@@ -130,11 +131,11 @@ private fun NavGraphBuilder.searchScreen(
         val dynamicBackgroundResource by remember {
             derivedStateOf {
                 val imageUrl = when (state.selectedSearchFilter) {
-                    SearchFilter.ALBUMS -> state.tiledItems.albumTiledListFlow.value.firstOrNull()?.albumArtUrlString
-                    SearchFilter.TRACKS -> state.tiledItems.trackTiledListFlow.value.firstOrNull()?.imageUrlString
-                    SearchFilter.ARTISTS -> state.tiledItems.artistTiledListFLow.value.firstOrNull()?.imageUrlString
-                    SearchFilter.PLAYLISTS -> state.tiledItems.playlistTiledListFlow.value.firstOrNull()?.imageUrlString
-                    SearchFilter.PODCASTS -> state.tiledItems.podcastTiledListFlow.value.firstOrNull()?.imageUrlString
+                    SearchFilter.ALBUMS -> state.tiledItems.albumTiledListFlow.value.loadedItem?.albumArtUrlString
+                    SearchFilter.TRACKS -> state.tiledItems.trackTiledListFlow.value.loadedItem?.imageUrlString
+                    SearchFilter.ARTISTS -> state.tiledItems.artistTiledListFLow.value.loadedItem?.imageUrlString
+                    SearchFilter.PLAYLISTS -> state.tiledItems.playlistTiledListFlow.value.loadedItem?.imageUrlString
+                    SearchFilter.PODCASTS -> state.tiledItems.podcastTiledListFlow.value.loadedItem?.imageUrlString
                 }
                 if (imageUrl == null) DynamicBackgroundResource.Empty
                 else DynamicBackgroundResource.FromImageUrl(imageUrl)
