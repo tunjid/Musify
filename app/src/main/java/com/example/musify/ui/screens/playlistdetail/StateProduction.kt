@@ -3,7 +3,7 @@ package com.example.musify.ui.screens.playlistdetail
 import com.example.musify.data.repositories.tracksrepository.PlaylistQuery
 import com.example.musify.data.repositories.tracksrepository.TracksRepository
 import com.example.musify.data.tiling.Page
-import com.example.musify.data.tiling.toTiledList
+import com.example.musify.data.tiling.toNetworkBackedTiledList
 import com.example.musify.domain.SearchResult
 import com.example.musify.usecases.getCurrentlyPlayingTrackUseCase.GetCurrentlyPlayingTrackUseCase
 import com.tunjid.mutator.Mutation
@@ -11,7 +11,6 @@ import com.tunjid.mutator.coroutines.SuspendingStateHolder
 import com.tunjid.mutator.coroutines.actionStateFlowProducer
 import com.tunjid.mutator.coroutines.mapToMutation
 import com.tunjid.mutator.coroutines.toMutationStream
-import com.tunjid.mutator.mutation
 import com.tunjid.tiler.TiledList
 import com.tunjid.tiler.distinctBy
 import com.tunjid.tiler.emptyTiledList
@@ -78,9 +77,8 @@ private suspend fun Flow<PlaylistDetailAction.LoadAround>.trackListMutations(
     tracksRepository: TracksRepository
 ): Flow<Mutation<PlaylistDetailUiState>> =
     map { it.query ?: state().currentQuery }
-        .toTiledList(
+        .toNetworkBackedTiledList(
             startQuery = state().currentQuery,
-            queryFor = { copy(page = it) },
             fetcher = tracksRepository::playListsFor
         )
         .mapToMutation {

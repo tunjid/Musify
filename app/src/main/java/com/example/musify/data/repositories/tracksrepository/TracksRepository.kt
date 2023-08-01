@@ -21,7 +21,9 @@ data class PlaylistQuery(
     override val page: Page,
     val id: String,
     val countryCode: String,
-) : PagedQuery
+) : PagedQuery<PlaylistQuery> {
+    override fun updatePage(page: Page): PlaylistQuery = copy(page = page)
+}
 
 interface TracksRepository {
     suspend fun fetchTopTenTracksForArtistWithId(

@@ -11,7 +11,9 @@ data class ArtistAlbumsQuery(
     override val page: Page,
     val artistId: String,
     val countryCode: String,
-) : PagedQuery
+) : PagedQuery<ArtistAlbumsQuery> {
+    override fun updatePage(page: Page): ArtistAlbumsQuery = copy(page = page)
+}
 
 /**
  * A repository that contains methods related to albums. **All methods

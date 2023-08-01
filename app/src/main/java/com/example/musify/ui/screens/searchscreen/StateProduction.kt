@@ -6,7 +6,7 @@ import com.example.musify.data.repositories.searchrepository.ContentQuery
 import com.example.musify.data.repositories.searchrepository.SearchRepository
 import com.example.musify.data.repositories.searchrepository.itemsFor
 import com.example.musify.data.tiling.Page
-import com.example.musify.data.tiling.toTiledList
+import com.example.musify.data.tiling.toNetworkBackedTiledList
 import com.example.musify.data.utils.NetworkMonitor
 import com.example.musify.domain.Genre
 import com.example.musify.domain.SearchResult
@@ -254,15 +254,13 @@ private inline fun <reified T : SearchResult> MutableStateFlow<ContentQuery>.toT
         if (it.searchQuery.length < 2 || it.page.offset != startPage.offset) 0
         // Debounce for key input
         else 300
-    }.toTiledList(
-        startQuery = value,
-        queryFor = { copy(page = it) },
-        fetcher = { query ->
-            if (query.searchQuery.isEmpty()) emptyFlow()
-            else searchRepository.searchFor(query)
-                .map<SearchResults, List<T>>(SearchResults::itemsFor)
-        }
-    )
+    }.toNetworkBackedTiledList(
+        startQuery = value
+    ) { query ->
+        if (query.searchQuery.isEmpty()) emptyFlow()
+        else searchRepository.searchFor(query)
+            .map<SearchResults, List<T>>(SearchResults::itemsFor)
+    }
         .map { tiledItems ->
             if (tiledItems.isEmpty()) tiledListOf(value to SearchItem.Empty)
             else tiledItems

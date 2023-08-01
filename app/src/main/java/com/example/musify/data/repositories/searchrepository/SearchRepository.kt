@@ -14,7 +14,9 @@ data class ContentQuery(
     val searchQuery: String,
     val countryCode: String,
     val type: SearchQueryType,
-) : PagedQuery
+) : PagedQuery<ContentQuery> {
+    override fun updatePage(page: Page): ContentQuery = copy(page = page)
+}
 
 /**
  * A repository that contains all methods related to searching.

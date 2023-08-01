@@ -3,7 +3,7 @@ package com.example.musify.ui.screens.podcastshowdetailscreen
 import com.example.musify.data.repositories.podcastsrepository.PodcastQuery
 import com.example.musify.data.repositories.podcastsrepository.PodcastsRepository
 import com.example.musify.data.tiling.Page
-import com.example.musify.data.tiling.toTiledList
+import com.example.musify.data.tiling.toNetworkBackedTiledList
 import com.example.musify.data.utils.FetchedResource
 import com.example.musify.domain.PodcastEpisode
 import com.example.musify.domain.PodcastShow
@@ -121,9 +121,8 @@ private suspend fun Flow<PodcastShowDetailAction.LoadAround>.episodeLoadMutation
     podcastsRepository: PodcastsRepository
 ): Flow<Mutation<PodcastShowDetailUiState>> =
     map { it.podcastQuery ?: state().currentQuery }
-        .toTiledList(
+        .toNetworkBackedTiledList(
             startQuery = state().currentQuery,
-            queryFor = { copy(page = it) },
             fetcher = podcastsRepository::podcastsFor
         )
         .mapToMutation {
