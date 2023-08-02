@@ -2,6 +2,7 @@ package com.example.musify.di
 
 import com.example.musify.musicplayer.MusicPlayerV2
 import com.example.musify.musicplayer.MusifyBackgroundMusicPlayerV2
+import com.example.musify.musicplayer.MusicPlaybackMonitor
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -23,4 +24,10 @@ abstract class MusicPlayerModule {
     abstract fun bindMusicPlayerV2(
         musifyBackgroundMusicPlayerV2: MusifyBackgroundMusicPlayerV2
     ): MusicPlayerV2
+
+    @Binds
+    @Singleton
+    abstract fun bindMusicPlayerMonitor(
+        musifyBackgroundMusicPlayerV2: MusifyBackgroundMusicPlayerV2
+    ): MusicPlaybackMonitor
 }

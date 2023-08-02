@@ -7,7 +7,8 @@ import com.example.musify.data.tiling.PagedItem
 import com.example.musify.data.tiling.toNetworkBackedTiledList
 import com.example.musify.data.tiling.withPlaceholders
 import com.example.musify.domain.SearchResult
-import com.example.musify.usecases.getCurrentlyPlayingTrackUseCase.GetCurrentlyPlayingTrackUseCase
+import com.example.musify.musicplayer.MusicPlaybackMonitor
+import com.example.musify.musicplayer.currentlyPlayingTrackStream
 import com.tunjid.mutator.Mutation
 import com.tunjid.mutator.coroutines.SuspendingStateHolder
 import com.tunjid.mutator.coroutines.actionStateFlowProducer
@@ -34,7 +35,7 @@ data class PlaylistDetailUiState(
     val items: TiledList<PlaylistQuery, PlayListItem> = emptyTiledList()
 )
 
-sealed interface PlayListItem: PagedItem {
+sealed interface PlayListItem : PagedItem {
     data class Loaded(
         override val pagedIndex: Int,
         val trackSearchResult: SearchResult.TrackSearchResult
@@ -58,8 +59,8 @@ fun CoroutineScope.playlistDetailStateProducer(
     ownerName: String,
     totalNumberOfTracks: String,
     countryCode: String,
+    musicPlaybackMonitor: MusicPlaybackMonitor,
     tracksRepository: TracksRepository,
-    getCurrentlyPlayingTrackUseCase: GetCurrentlyPlayingTrackUseCase,
 ) = actionStateFlowProducer<PlaylistDetailAction, PlaylistDetailUiState>(
     initialState = PlaylistDetailUiState(
         playlistName = playlistName,
@@ -73,7 +74,7 @@ fun CoroutineScope.playlistDetailStateProducer(
         )
     ),
     mutationFlows = listOf(
-        getCurrentlyPlayingTrackUseCase.playingTrackMutations(),
+        musicPlaybackMonitor.playingTrackMutations(),
     ),
     actionTransform = { actions ->
         actions.toMutationStream {
@@ -86,7 +87,7 @@ fun CoroutineScope.playlistDetailStateProducer(
     }
 )
 
-private fun GetCurrentlyPlayingTrackUseCase.playingTrackMutations(): Flow<Mutation<PlaylistDetailUiState>> =
+private fun MusicPlaybackMonitor.playingTrackMutations(): Flow<Mutation<PlaylistDetailUiState>> =
     currentlyPlayingTrackStream.mapToMutation {
         copy(currentlyPlayingTrack = it)
     }
