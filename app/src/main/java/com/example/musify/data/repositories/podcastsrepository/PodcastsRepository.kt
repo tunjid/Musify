@@ -12,7 +12,9 @@ data class PodcastQuery(
     override val page: Page,
     val showId: String,
     val countryCode: String,
-) : PagedQuery
+) : PagedQuery<PodcastQuery> {
+    override fun updatePage(page: Page): PodcastQuery = copy(page = page)
+}
 
 /**
  * A repository that contains all methods related to podcasts.

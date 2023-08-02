@@ -3,7 +3,9 @@ package com.example.musify.ui.screens.playlistdetail
 import com.example.musify.data.repositories.tracksrepository.PlaylistQuery
 import com.example.musify.data.repositories.tracksrepository.TracksRepository
 import com.example.musify.data.tiling.Page
-import com.example.musify.data.tiling.toTiledList
+import com.example.musify.data.tiling.PagedItem
+import com.example.musify.data.tiling.toNetworkBackedTiledList
+import com.example.musify.data.tiling.withPlaceholders
 import com.example.musify.domain.SearchResult
 import com.example.musify.usecases.getCurrentlyPlayingTrackUseCase.GetCurrentlyPlayingTrackUseCase
 import com.tunjid.mutator.Mutation
@@ -11,7 +13,6 @@ import com.tunjid.mutator.coroutines.SuspendingStateHolder
 import com.tunjid.mutator.coroutines.actionStateFlowProducer
 import com.tunjid.mutator.coroutines.mapToMutation
 import com.tunjid.mutator.coroutines.toMutationStream
-import com.tunjid.mutator.mutation
 import com.tunjid.tiler.TiledList
 import com.tunjid.tiler.distinctBy
 import com.tunjid.tiler.emptyTiledList
@@ -30,8 +31,25 @@ data class PlaylistDetailUiState(
     val totalNumberOfTracks: String,
     val currentQuery: PlaylistQuery,
     val currentlyPlayingTrack: SearchResult.TrackSearchResult? = null,
-    val tracks: TiledList<PlaylistQuery, SearchResult.TrackSearchResult> = emptyTiledList()
+    val items: TiledList<PlaylistQuery, PlayListItem> = emptyTiledList()
 )
+
+sealed interface PlayListItem: PagedItem {
+    data class Loaded(
+        override val pagedIndex: Int,
+        val trackSearchResult: SearchResult.TrackSearchResult
+    ) : PlayListItem
+
+    data class Placeholder(
+        override val pagedIndex: Int,
+    ) : PlayListItem
+}
+
+private val PlayListItem.internalKey
+    get() = when (this) {
+        is PlayListItem.Loaded -> trackSearchResult.id
+        is PlayListItem.Placeholder -> pagedIndex
+    }
 
 fun CoroutineScope.playlistDetailStateProducer(
     playlistId: String,
@@ -78,11 +96,13 @@ private suspend fun Flow<PlaylistDetailAction.LoadAround>.trackListMutations(
     tracksRepository: TracksRepository
 ): Flow<Mutation<PlaylistDetailUiState>> =
     map { it.query ?: state().currentQuery }
-        .toTiledList(
+        .toNetworkBackedTiledList(
             startQuery = state().currentQuery,
-            queryFor = { copy(page = it) },
-            fetcher = tracksRepository::playListsFor
+            fetcher = tracksRepository::playListsFor.withPlaceholders(
+                placeholderMapper = PlayListItem::Placeholder,
+                loadedMapper = PlayListItem::Loaded
+            )
         )
         .mapToMutation {
-            copy(tracks = it.distinctBy(SearchResult.TrackSearchResult::id))
+            copy(items = it.distinctBy(PlayListItem::internalKey))
         }

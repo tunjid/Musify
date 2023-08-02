@@ -4,7 +4,7 @@ import com.example.musify.data.repositories.albumsrepository.AlbumsRepository
 import com.example.musify.data.repositories.albumsrepository.ArtistAlbumsQuery
 import com.example.musify.data.repositories.tracksrepository.TracksRepository
 import com.example.musify.data.tiling.Page
-import com.example.musify.data.tiling.toTiledList
+import com.example.musify.data.tiling.toNetworkBackedTiledList
 import com.example.musify.data.utils.FetchedResource
 import com.example.musify.data.utils.NetworkMonitor
 import com.example.musify.data.utils.onConnected
@@ -139,9 +139,8 @@ private suspend fun Flow<ArtistDetailAction.LoadAround>.tracksMutations(
     albumsRepository: AlbumsRepository
 ): Flow<Mutation<ArtistDetailUiState>> =
     map { it.query ?: state().currentQuery }
-        .toTiledList(
+        .toNetworkBackedTiledList(
             startQuery = state().currentQuery,
-            queryFor = { copy(page = it) },
             fetcher = albumsRepository::albumsFor
         )
         .mapToMutation {

@@ -70,7 +70,7 @@ private val CardShape = RectangleShape
 fun SearchTrackListItems(
     isOnline: Boolean,
     currentlyPlayingTrack: SearchResult.TrackSearchResult?,
-    tracksListForSearchQuery: StateFlow<TiledList<ContentQuery, SearchResult.TrackSearchResult>>,
+    tracksListForSearchQuery: StateFlow<TiledList<ContentQuery, SearchItem<SearchResult.TrackSearchResult>>>,
     onQueryChanged: (ContentQuery?) -> Unit,
     onItemClick: (SearchResult) -> Unit,
 ) = TiledLazyColumn(
@@ -81,7 +81,6 @@ fun SearchTrackListItems(
     itemsWithEmptyListContent(
         items = items,
         cardType = ListItemCardType.TRACK,
-        key = SearchResult.TrackSearchResult::id
     ) { track ->
         MusifyCompactTrackCard(
             modifier = Modifier.animateItemPlacement(),
@@ -99,7 +98,7 @@ fun SearchTrackListItems(
 @Composable
 fun SearchAlbumListItems(
     isOnline: Boolean,
-    albumListForSearchQuery: StateFlow<TiledList<ContentQuery, SearchResult.AlbumSearchResult>>,
+    albumListForSearchQuery: StateFlow<TiledList<ContentQuery, SearchItem<SearchResult.AlbumSearchResult>>>,
     onQueryChanged: (ContentQuery?) -> Unit,
     onItemClick: (SearchResult) -> Unit,
 ) = TiledLazyColumn(
@@ -110,7 +109,6 @@ fun SearchAlbumListItems(
     itemsWithEmptyListContent(
         items = items,
         cardType = ListItemCardType.ALBUM,
-        key = SearchResult.AlbumSearchResult::id
     ) { album ->
         MusifyCompactListItemCard(
             modifier = Modifier.animateItemPlacement(),
@@ -132,7 +130,7 @@ fun SearchAlbumListItems(
 @Composable
 fun SearchArtistListItems(
     isOnline: Boolean,
-    artistListForSearchQuery: StateFlow<TiledList<ContentQuery, SearchResult.ArtistSearchResult>>,
+    artistListForSearchQuery: StateFlow<TiledList<ContentQuery, SearchItem<SearchResult.ArtistSearchResult>>>,
     onItemClick: (SearchResult) -> Unit,
     onQueryChanged: (ContentQuery?) -> Unit,
     artistImageErrorPainter: Painter
@@ -144,7 +142,6 @@ fun SearchArtistListItems(
     itemsWithEmptyListContent(
         items = items,
         cardType = ListItemCardType.PLAYLIST,
-        key = SearchResult.ArtistSearchResult::id
     ) { artist ->
         MusifyCompactListItemCard(
             backgroundColor = CardBackgroundColor,
@@ -166,7 +163,7 @@ fun SearchArtistListItems(
 @Composable
 fun SearchPlaylistListItems(
     isOnline: Boolean,
-    playlistListForSearchQuery: StateFlow<TiledList<ContentQuery, SearchResult.PlaylistSearchResult>>,
+    playlistListForSearchQuery: StateFlow<TiledList<ContentQuery, SearchItem<SearchResult.PlaylistSearchResult>>>,
     onQueryChanged: (ContentQuery?) -> Unit,
     onItemClick: (SearchResult) -> Unit,
     playlistImageErrorPainter: Painter
@@ -178,7 +175,6 @@ fun SearchPlaylistListItems(
     itemsWithEmptyListContent(
         items = items,
         cardType = ListItemCardType.PLAYLIST,
-        key = SearchResult.PlaylistSearchResult::id
     ) { playlist ->
         MusifyCompactListItemCard(
             modifier = Modifier.animateItemPlacement(),
@@ -201,8 +197,8 @@ fun SearchPlaylistListItems(
 @Composable
 fun SearchPodcastListItems(
     isOnline: Boolean,
-    podcastsForSearchQuery: StateFlow<TiledList<ContentQuery, SearchResult.PodcastSearchResult>>,
-    episodesForSearchQuery: StateFlow<TiledList<ContentQuery, SearchResult.EpisodeSearchResult>>,
+    podcastsForSearchQuery: StateFlow<TiledList<ContentQuery, SearchItem<SearchResult.PodcastSearchResult>>>,
+    episodesForSearchQuery: StateFlow<TiledList<ContentQuery, SearchItem<SearchResult.EpisodeSearchResult>>>,
     onQueryChanged: (ContentQuery?) -> Unit,
     onPodcastItemClicked: (SearchResult.PodcastSearchResult) -> Unit,
     onEpisodeItemClicked: (SearchResult.EpisodeSearchResult) -> Unit
@@ -236,9 +232,9 @@ fun SearchPodcastListItems(
                 horizontalArrangement = Arrangement.spacedBy(16.dp),
                 contentPadding = PaddingValues(horizontal = 16.dp)
             ) {
-                items(
+                itemsWithEmptyListContent(
                     items = podcasts,
-                    key = SearchResult.PodcastSearchResult::id
+                    emptyListContent = {}
                 ) { podcast ->
                     PodcastCard(
                         podcastArtUrlString = podcast.imageUrlString,
@@ -259,10 +255,9 @@ fun SearchPodcastListItems(
     }
 }
 
-private fun <T : Any> LazyListScope.itemsWithEmptyListContent(
-    items: TiledList<ContentQuery, T>,
+private fun <T : SearchResult> LazyListScope.itemsWithEmptyListContent(
+    items: TiledList<ContentQuery, SearchItem<T>>,
     cardType: ListItemCardType? = null,
-    key: ((item: T) -> Any)? = null,
     emptyListContent: @Composable LazyItemScope.() -> Unit = {
         val title = remember(cardType) {
             "Couldn't find " +
@@ -289,18 +284,14 @@ private fun <T : Any> LazyListScope.itemsWithEmptyListContent(
 ) {
     items(
         items = items,
-        key = key,
-        itemContent = itemContent
+        key = SearchItem<T>::id,
+        itemContent = {
+            when (it) {
+                SearchItem.Empty -> emptyListContent()
+                is SearchItem.Loaded -> itemContent(it.result)
+            }
+        }
     )
-//    if (items.isEmpty()) {
-//        item { emptyListContent.invoke(this) }
-//    } else {
-//        itemsIndexed(
-//            items = items,
-//            key = key,
-//            itemContent = itemContent
-//        )
-//    }
 }
 
 @Composable

@@ -205,7 +205,7 @@ private fun NavGraphBuilder.playlistDetailScreen(
             nameOfPlaylistOwner = state.ownerName,
             totalNumberOfTracks = state.totalNumberOfTracks,
             imageResToUseWhenImageUrlStringIsNull = R.drawable.ic_outline_account_circle_24,
-            tracks = state.tracks,
+            tracks = state.items,
             onQueryChanged = { actions(PlaylistDetailAction.LoadAround(it)) },
             currentlyPlayingTrack = state.currentlyPlayingTrack,
             onBackButtonClicked = onBackButtonClicked,
@@ -365,7 +365,7 @@ private fun NavGraphBuilder.podcastShowDetailScreen(
         val viewModel = hiltViewModel<PodcastShowDetailViewModel>()
         val state by viewModel.state.collectAsState()
         val actions = remember { viewModel.actions }
-        val episodesForShow = state.episodesForShow
+        val episodesForShow = state.items
 
         if (state.podcastShow == null) {
             Box(modifier = Modifier.fillMaxSize()) {

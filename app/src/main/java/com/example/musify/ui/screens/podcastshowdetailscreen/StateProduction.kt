@@ -3,7 +3,9 @@ package com.example.musify.ui.screens.podcastshowdetailscreen
 import com.example.musify.data.repositories.podcastsrepository.PodcastQuery
 import com.example.musify.data.repositories.podcastsrepository.PodcastsRepository
 import com.example.musify.data.tiling.Page
-import com.example.musify.data.tiling.toTiledList
+import com.example.musify.data.tiling.PagedItem
+import com.example.musify.data.tiling.toNetworkBackedTiledList
+import com.example.musify.data.tiling.withPlaceholders
 import com.example.musify.data.utils.FetchedResource
 import com.example.musify.domain.PodcastEpisode
 import com.example.musify.domain.PodcastShow
@@ -33,10 +35,27 @@ data class PodcastShowDetailUiState(
     val currentlyPlayingEpisode: PodcastEpisode? = null,
     val isCurrentlyPlayingEpisodePaused: Boolean? = null,
     val loadingState: LoadingState = LoadingState.LOADING,
-    val episodesForShow: TiledList<PodcastQuery, PodcastEpisode> = emptyTiledList()
+    val items: TiledList<PodcastQuery, ShowItem> = emptyTiledList()
 ) {
     enum class LoadingState { IDLE, LOADING, PLAYBACK_LOADING, ERROR }
 }
+
+sealed interface ShowItem: PagedItem {
+    data class Loaded(
+        override val pagedIndex: Int,
+        val episode: PodcastEpisode
+    ) : ShowItem
+
+    data class Placeholder(
+        override val pagedIndex: Int,
+    ) : ShowItem
+}
+
+private val ShowItem.internalKey
+    get() = when (this) {
+        is ShowItem.Loaded -> episode.id
+        is ShowItem.Placeholder -> pagedIndex
+    }
 
 fun CoroutineScope.podcastShowDetailStateProducer(
     showId: String,
@@ -121,13 +140,17 @@ private suspend fun Flow<PodcastShowDetailAction.LoadAround>.episodeLoadMutation
     podcastsRepository: PodcastsRepository
 ): Flow<Mutation<PodcastShowDetailUiState>> =
     map { it.podcastQuery ?: state().currentQuery }
-        .toTiledList(
+        .toNetworkBackedTiledList(
             startQuery = state().currentQuery,
-            queryFor = { copy(page = it) },
-            fetcher = podcastsRepository::podcastsFor
+            fetcher = podcastsRepository::podcastsFor.withPlaceholders(
+                placeholderMapper = ShowItem::Placeholder,
+                loadedMapper = ShowItem::Loaded
+            )
         )
-        .mapToMutation {
-            copy(episodesForShow = it.distinctBy(PodcastEpisode::id))
+        .mapToMutation { items ->
+            copy(
+                items = items.distinctBy(ShowItem::internalKey)
+            )
         }
 
 private fun PodcastsRepository.fetchShowMutations(

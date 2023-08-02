@@ -120,6 +120,7 @@ fun SearchScreen(
 
         AnimatedContent(
             targetState = isSearchListVisible,
+            label = "PagedSearch",
             transitionSpec = { fadeIn() with fadeOut() },
         ) { targetState ->
             when (targetState) {
