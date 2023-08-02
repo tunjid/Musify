@@ -3,6 +3,7 @@ package com.example.musify.ui.screens.albumdetail
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -14,6 +15,7 @@ import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.layout.windowInsetsBottomHeight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
@@ -43,8 +45,11 @@ import com.example.musify.ui.components.ImageHeaderWithMetadata
 import com.example.musify.ui.components.MusifyBottomNavigationConstants
 import com.example.musify.ui.components.MusifyCompactTrackCard
 import com.example.musify.ui.components.MusifyMiniPlayerConstants
+import com.example.musify.ui.components.scrollbar.DraggableScrollbar
 import com.example.musify.ui.dynamicTheme.dynamicbackgroundmodifier.DynamicBackgroundResource
 import com.example.musify.ui.dynamicTheme.dynamicbackgroundmodifier.dynamicBackground
+import com.example.musify.ui.components.scrollbar.rememberDraggableScroller
+import com.example.musify.ui.components.scrollbar.scrollbarState
 import kotlinx.coroutines.launch
 
 @ExperimentalMaterialApi
@@ -154,6 +159,24 @@ fun AlbumDetailScreen(
                 }
             )
         }
+        val itemsAvailable = trackList.size + 1 // Include header
+        val scrollbarState = lazyListState.scrollbarState(
+            itemsAvailable = itemsAvailable,
+        )
+        lazyListState.DraggableScrollbar(
+            modifier = Modifier
+                .align(Alignment.CenterEnd)
+                .systemBarsPadding()
+                .padding(
+                    top = 56.dp,
+                    bottom = 56.dp,
+                ),
+            state = scrollbarState,
+            orientation = Orientation.Vertical,
+            onThumbMoved = lazyListState.rememberDraggableScroller(
+                itemsAvailable = itemsAvailable,
+            )
+        )
     }
 }
 

@@ -4,6 +4,7 @@ import androidx.annotation.DrawableRes
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -15,6 +16,7 @@ import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.layout.windowInsetsBottomHeight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
@@ -42,8 +44,12 @@ import com.example.musify.ui.components.DetailScreenTopAppBar
 import com.example.musify.ui.components.HeaderImageSource
 import com.example.musify.ui.components.ImageHeaderWithMetadata
 import com.example.musify.ui.components.MusifyBottomNavigationConstants
+import com.example.musify.ui.components.MusifyCompactLoadingTrackCard
 import com.example.musify.ui.components.MusifyCompactTrackCard
 import com.example.musify.ui.components.MusifyMiniPlayerConstants
+import com.example.musify.ui.components.scrollbar.DraggableScrollbar
+import com.example.musify.ui.components.scrollbar.rememberTiledDraggableScroller
+import com.example.musify.ui.components.scrollbar.tiledListScrollbarState
 import com.example.musify.ui.dynamicTheme.dynamicbackgroundmodifier.DynamicBackgroundResource
 import com.example.musify.ui.dynamicTheme.dynamicbackgroundmodifier.dynamicBackground
 import com.tunjid.tiler.TiledList
@@ -59,7 +65,7 @@ fun PlaylistDetailScreen(
     nameOfPlaylistOwner: String,
     totalNumberOfTracks: String,
     @DrawableRes imageResToUseWhenImageUrlStringIsNull: Int,
-    tracks: TiledList<PlaylistQuery, SearchResult.TrackSearchResult>,
+    tracks: TiledList<PlaylistQuery, PlayListItem>,
     currentlyPlayingTrack: SearchResult.TrackSearchResult?,
     onQueryChanged: (PlaylistQuery?) -> Unit,
     onBackButtonClicked: () -> Unit,
@@ -97,6 +103,7 @@ fun PlaylistDetailScreen(
                 onImageLoaded = { isLoadingPlaceholderForAlbumArtVisible = false },
                 onBackButtonClicked = onBackButtonClicked
             )
+            // if error message visible
             if (false) {
                 item {
                     Column(
@@ -119,19 +126,22 @@ fun PlaylistDetailScreen(
             } else {
                 items(
                     items = tracks,
-                    key = SearchResult.TrackSearchResult::id
-                ) {
-                    MusifyCompactTrackCard(
-                        track = it,
-                        onClick = onTrackClicked,
-                        isCurrentlyPlaying = it == currentlyPlayingTrack,
-                        isAlbumArtVisible = true,
-                        subtitleTextStyle = LocalTextStyle.current.copy(
-                            fontWeight = FontWeight.Thin,
-                            color = MaterialTheme.colors.onBackground.copy(alpha = ContentAlpha.disabled),
-                        ),
-                        contentPadding = PaddingValues(16.dp)
-                    )
+                    key = PlayListItem::pagedIndex
+                ) { playListItem ->
+                    when(playListItem) {
+                        is PlayListItem.Loaded -> MusifyCompactTrackCard(
+                            track = playListItem.trackSearchResult,
+                            onClick = onTrackClicked,
+                            isCurrentlyPlaying = playListItem.trackSearchResult == currentlyPlayingTrack,
+                            isAlbumArtVisible = true,
+                            subtitleTextStyle = LocalTextStyle.current.copy(
+                                fontWeight = FontWeight.Thin,
+                                color = MaterialTheme.colors.onBackground.copy(alpha = ContentAlpha.disabled),
+                            ),
+                            contentPadding = PaddingValues(16.dp)
+                        )
+                        is PlayListItem.Placeholder -> MusifyCompactLoadingTrackCard()
+                    }
                 }
             }
             item {
@@ -164,6 +174,27 @@ fun PlaylistDetailScreen(
                 }
             )
         }
+        val tracksCount = totalNumberOfTracks.toIntOrNull() ?: 0
+        val scrollbarState = lazyListState.tiledListScrollbarState(
+            itemsAvailable = tracksCount,
+            tiledItems = tracks
+        )
+        lazyListState.DraggableScrollbar(
+            modifier = Modifier
+                .align(Alignment.CenterEnd)
+                .systemBarsPadding()
+                .padding(
+                    top = 56.dp,
+                    bottom = 56.dp,
+                ),
+            state = scrollbarState,
+            orientation = Orientation.Vertical,
+            onThumbMoved = lazyListState.rememberTiledDraggableScroller(
+                itemsAvailable = tracksCount,
+                tiledItems = tracks,
+                onQueryChanged = onQueryChanged,
+            )
+        )
         lazyListState.PivotedTilingEffect(
             items = tracks,
             onQueryChanged = onQueryChanged

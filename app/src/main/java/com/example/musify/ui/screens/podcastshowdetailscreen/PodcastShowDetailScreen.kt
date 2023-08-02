@@ -4,6 +4,7 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -61,6 +62,9 @@ import com.example.musify.ui.components.AsyncImageWithPlaceholder
 import com.example.musify.ui.components.DefaultMusifyLoadingAnimation
 import com.example.musify.ui.components.DetailScreenTopAppBar
 import com.example.musify.ui.components.HtmlTextView
+import com.example.musify.ui.components.scrollbar.DraggableScrollbar
+import com.example.musify.ui.components.scrollbar.rememberTiledDraggableScroller
+import com.example.musify.ui.components.scrollbar.tiledListScrollbarState
 import com.example.musify.ui.dynamicTheme.dynamicbackgroundmodifier.DynamicBackgroundResource
 import com.example.musify.ui.dynamicTheme.dynamicbackgroundmodifier.dynamicBackground
 import com.tunjid.tiler.TiledList
@@ -79,7 +83,7 @@ fun PodcastShowDetailScreen(
     isPlaybackLoading: Boolean,
     onEpisodeClicked: (PodcastEpisode) -> Unit,
     onQueryChanged: (PodcastQuery?) -> Unit,
-    episodes: TiledList<PodcastQuery, PodcastEpisode>
+    episodes: TiledList<PodcastQuery, ShowItem>
 ) {
     val lazyListState = rememberLazyListState()
     val isAppBarVisible by remember {
@@ -134,16 +138,20 @@ fun PodcastShowDetailScreen(
             }
             items(
                 items = episodes,
-                key = PodcastEpisode::id
-            ) { episode ->
-                StreamableEpisodeCard(
-                    episode = episode,
-                    isEpisodePlaying = currentlyPlayingEpisode.equalsIgnoringImageSize(episode) && isCurrentlyPlayingEpisodePaused == false,
-                    isCardHighlighted = currentlyPlayingEpisode.equalsIgnoringImageSize(episode),
-                    onPlayButtonClicked = { onEpisodePlayButtonClicked(episode) },
-                    onPauseButtonClicked = { onEpisodePauseButtonClicked(episode) },
-                    onClicked = { onEpisodeClicked(episode) },
-                )
+                key = ShowItem::pagedIndex
+            ) { item ->
+                when (item) {
+                    is ShowItem.Loaded -> StreamableEpisodeCard(
+                        episode = item.episode,
+                        isEpisodePlaying = currentlyPlayingEpisode.equalsIgnoringImageSize(item.episode) && isCurrentlyPlayingEpisodePaused == false,
+                        isCardHighlighted = currentlyPlayingEpisode.equalsIgnoringImageSize(item.episode),
+                        onPlayButtonClicked = { onEpisodePlayButtonClicked(item.episode) },
+                        onPauseButtonClicked = { onEpisodePauseButtonClicked(item.episode) },
+                        onClicked = { onEpisodeClicked(item.episode) },
+                    )
+
+                    is ShowItem.Placeholder -> StreamableEpisodeLoadingCard()
+                }
             }
         }
         AnimatedVisibility(
@@ -167,7 +175,26 @@ fun PodcastShowDetailScreen(
             modifier = Modifier.align(Alignment.Center),
             isVisible = isPlaybackLoading
         )
-
+        val scrollbarState = lazyListState.tiledListScrollbarState(
+            itemsAvailable = podcastShow.totalEpisodes,
+            tiledItems = episodes
+        )
+        lazyListState.DraggableScrollbar(
+            modifier = Modifier
+                .align(Alignment.CenterEnd)
+                .systemBarsPadding()
+                .padding(
+                    top = 56.dp,
+                    bottom = 56.dp,
+                ),
+            state = scrollbarState,
+            orientation = Orientation.Vertical,
+            onThumbMoved = lazyListState.rememberTiledDraggableScroller(
+                itemsAvailable = podcastShow.totalEpisodes,
+                tiledItems = episodes,
+                onQueryChanged = onQueryChanged,
+            )
+        )
         lazyListState.PivotedTilingEffect(
             items = episodes,
             onQueryChanged = onQueryChanged

@@ -84,6 +84,32 @@ fun MusifyCompactTrackCard(
     }
 }
 
+@ExperimentalMaterialApi
+@Composable
+fun MusifyCompactLoadingTrackCard(
+    modifier: Modifier = Modifier,
+    shape: Shape = RectangleShape,
+    backgroundColor: Color = MaterialTheme.colors.surface,
+    titleTextStyle: TextStyle = LocalTextStyle.current,
+    subtitleTextStyle: TextStyle = LocalTextStyle.current,
+    contentPadding: PaddingValues = MusifyCompactTrackCardDefaults.defaultContentPadding
+) {
+    MusifyCompactListItemCard(
+        modifier = modifier,
+        backgroundColor = backgroundColor,
+        shape = shape,
+        cardType = ListItemCardType.TRACK,
+        thumbnailImageUrlString = null,
+        title = null,
+        subtitle = null,
+        onClick = { },
+        onTrailingButtonIconClick = {},
+        titleTextStyle = titleTextStyle,
+        subtitleTextStyle = subtitleTextStyle,
+        contentPadding = contentPadding
+    )
+}
+
 /**
  * Contains default values used by [MusifyCompactTrackCard].
  */

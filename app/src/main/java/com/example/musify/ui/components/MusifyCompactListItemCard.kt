@@ -37,6 +37,7 @@ import androidx.compose.ui.unit.dp
 import com.example.musify.R
 import com.example.musify.utils.conditional
 import com.google.accompanist.placeholder.PlaceholderHighlight
+import com.google.accompanist.placeholder.material.placeholder
 import com.google.accompanist.placeholder.material.shimmer
 
 /**
@@ -86,8 +87,8 @@ enum class ListItemCardType { ALBUM, ARTIST, TRACK, PLAYLIST }
 @ExperimentalMaterialApi
 @Composable
 fun MusifyCompactListItemCard(
-    title: String,
-    subtitle: String,
+    title: String?,
+    subtitle: String?,
     onClick: () -> Unit,
     trailingButtonIcon: ImageVector,
     onTrailingButtonIconClick: () -> Unit,
@@ -143,14 +144,22 @@ fun MusifyCompactListItemCard(
                 verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
                 Text(
-                    text = title,
+                    modifier = Modifier.placeholder(
+                        visible = title == null,
+                        highlight = placeholderHighlight
+                    ),
+                    text = title ?: "",
                     fontWeight = FontWeight.Bold,
                     overflow = TextOverflow.Ellipsis,
                     maxLines = 1,
                     style = titleTextStyle
                 )
                 Text(
-                    text = subtitle,
+                    modifier = Modifier.placeholder(
+                        visible = subtitle == null,
+                        highlight = placeholderHighlight
+                    ),
+                    text = subtitle ?: "",
                     fontWeight = FontWeight.SemiBold,
                     overflow = TextOverflow.Ellipsis,
                     maxLines = 1,
@@ -204,8 +213,8 @@ fun MusifyCompactListItemCard(
 @Composable
 fun MusifyCompactListItemCard(
     cardType: ListItemCardType,
-    title: String,
-    subtitle: String,
+    title: String?,
+    subtitle: String?,
     thumbnailImageUrlString: String?,
     onClick: () -> Unit,
     onTrailingButtonIconClick: () -> Unit,

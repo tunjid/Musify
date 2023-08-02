@@ -3,7 +3,9 @@ package com.example.musify.ui.screens.playlistdetail
 import com.example.musify.data.repositories.tracksrepository.PlaylistQuery
 import com.example.musify.data.repositories.tracksrepository.TracksRepository
 import com.example.musify.data.tiling.Page
+import com.example.musify.data.tiling.PagedItem
 import com.example.musify.data.tiling.toNetworkBackedTiledList
+import com.example.musify.data.tiling.withPlaceholders
 import com.example.musify.domain.SearchResult
 import com.example.musify.usecases.getCurrentlyPlayingTrackUseCase.GetCurrentlyPlayingTrackUseCase
 import com.tunjid.mutator.Mutation
@@ -29,8 +31,25 @@ data class PlaylistDetailUiState(
     val totalNumberOfTracks: String,
     val currentQuery: PlaylistQuery,
     val currentlyPlayingTrack: SearchResult.TrackSearchResult? = null,
-    val tracks: TiledList<PlaylistQuery, SearchResult.TrackSearchResult> = emptyTiledList()
+    val items: TiledList<PlaylistQuery, PlayListItem> = emptyTiledList()
 )
+
+sealed interface PlayListItem: PagedItem {
+    data class Loaded(
+        override val pagedIndex: Int,
+        val trackSearchResult: SearchResult.TrackSearchResult
+    ) : PlayListItem
+
+    data class Placeholder(
+        override val pagedIndex: Int,
+    ) : PlayListItem
+}
+
+private val PlayListItem.internalKey
+    get() = when (this) {
+        is PlayListItem.Loaded -> trackSearchResult.id
+        is PlayListItem.Placeholder -> pagedIndex
+    }
 
 fun CoroutineScope.playlistDetailStateProducer(
     playlistId: String,
@@ -79,8 +98,11 @@ private suspend fun Flow<PlaylistDetailAction.LoadAround>.trackListMutations(
     map { it.query ?: state().currentQuery }
         .toNetworkBackedTiledList(
             startQuery = state().currentQuery,
-            fetcher = tracksRepository::playListsFor
+            fetcher = tracksRepository::playListsFor.withPlaceholders(
+                placeholderMapper = PlayListItem::Placeholder,
+                loadedMapper = PlayListItem::Loaded
+            )
         )
         .mapToMutation {
-            copy(tracks = it.distinctBy(SearchResult.TrackSearchResult::id))
+            copy(items = it.distinctBy(PlayListItem::internalKey))
         }
