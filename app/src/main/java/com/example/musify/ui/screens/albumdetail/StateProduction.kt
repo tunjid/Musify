@@ -3,8 +3,9 @@ package com.example.musify.ui.screens.albumdetail
 import com.example.musify.data.repositories.tracksrepository.TracksRepository
 import com.example.musify.data.utils.FetchedResource
 import com.example.musify.domain.SearchResult
-import com.example.musify.usecases.getCurrentlyPlayingTrackUseCase.GetCurrentlyPlayingTrackUseCase
-import com.example.musify.usecases.getPlaybackLoadingStatusUseCase.GetPlaybackLoadingStatusUseCase
+import com.example.musify.musicplayer.MusicPlaybackMonitor
+import com.example.musify.musicplayer.currentlyPlayingTrackStream
+import com.example.musify.musicplayer.loadingStatusStream
 import com.tunjid.mutator.Mutation
 import com.tunjid.mutator.coroutines.actionStateFlowProducer
 import com.tunjid.mutator.coroutines.mapToMutation
@@ -36,8 +37,7 @@ fun CoroutineScope.albumDetailStateProducer(
     yearOfRelease: String,
     countryCode: String,
     tracksRepository: TracksRepository,
-    getCurrentlyPlayingTrackUseCase: GetCurrentlyPlayingTrackUseCase,
-    getPlaybackLoadingStatusUseCase: GetPlaybackLoadingStatusUseCase,
+    musicPlaybackMonitor: MusicPlaybackMonitor,
 ) = actionStateFlowProducer<Unit, AlbumDetailUiState>(
     initialState = AlbumDetailUiState(
         albumArtUrl = albumArtUrl,
@@ -46,8 +46,8 @@ fun CoroutineScope.albumDetailStateProducer(
         yearOfRelease = yearOfRelease
     ),
     mutationFlows = listOf(
-        getCurrentlyPlayingTrackUseCase.playingTrackMutations(),
-        getPlaybackLoadingStatusUseCase.loadingStatusMutations(),
+        musicPlaybackMonitor.playingTrackMutations(),
+        musicPlaybackMonitor.loadingStatusMutations(),
         tracksRepository.trackListMutations(
             albumId = albumId,
             countryCode = countryCode
@@ -55,12 +55,12 @@ fun CoroutineScope.albumDetailStateProducer(
     ),
 )
 
-private fun GetCurrentlyPlayingTrackUseCase.playingTrackMutations(): Flow<Mutation<AlbumDetailUiState>> =
+private fun MusicPlaybackMonitor.playingTrackMutations(): Flow<Mutation<AlbumDetailUiState>> =
     currentlyPlayingTrackStream.mapToMutation {
         copy(currentlyPlayingTrack = it)
     }
 
-private fun GetPlaybackLoadingStatusUseCase.loadingStatusMutations(): Flow<Mutation<AlbumDetailUiState>> =
+private fun MusicPlaybackMonitor.loadingStatusMutations(): Flow<Mutation<AlbumDetailUiState>> =
     loadingStatusStream.mapToMutation { isPlaybackLoading ->
         copy(
             loadingState = when {

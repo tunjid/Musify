@@ -5,8 +5,8 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.musify.data.repositories.tracksrepository.TracksRepository
+import com.example.musify.musicplayer.MusicPlaybackMonitor
 import com.example.musify.ui.navigation.MusifyNavigationDestinations
-import com.example.musify.usecases.getCurrentlyPlayingTrackUseCase.GetCurrentlyPlayingTrackUseCase
 import com.example.musify.utils.countryCode
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -17,7 +17,7 @@ class PlaylistDetailViewModel @Inject constructor(
     @ApplicationContext context: Context,
     savedStateHandle: SavedStateHandle,
     tracksRepository: TracksRepository,
-    getCurrentlyPlayingTrackUseCase: GetCurrentlyPlayingTrackUseCase,
+    musicPlaybackMonitor: MusicPlaybackMonitor,
 ) : ViewModel() {
     private val stateProducer =
         viewModelScope.playlistDetailStateProducer(
@@ -37,8 +37,8 @@ class PlaylistDetailViewModel @Inject constructor(
                 MusifyNavigationDestinations.PlaylistDetailScreen.NAV_ARG_NUMBER_OF_TRACKS
             ]!!,
             countryCode = context.countryCode,
+            musicPlaybackMonitor = musicPlaybackMonitor,
             tracksRepository = tracksRepository,
-            getCurrentlyPlayingTrackUseCase = getCurrentlyPlayingTrackUseCase,
         )
 
     val state = stateProducer.state

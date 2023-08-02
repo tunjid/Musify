@@ -9,7 +9,8 @@ import com.example.musify.data.tiling.withPlaceholders
 import com.example.musify.data.utils.FetchedResource
 import com.example.musify.domain.PodcastEpisode
 import com.example.musify.domain.PodcastShow
-import com.example.musify.usecases.getCurrentlyPlayingEpisodePlaybackStateUseCase.GetCurrentlyPlayingEpisodePlaybackStateUseCase
+import com.example.musify.musicplayer.MusicPlaybackMonitor
+import com.example.musify.musicplayer.currentlyPlayingEpisodePlaybackStateStream
 import com.tunjid.mutator.Mutation
 import com.tunjid.mutator.coroutines.SuspendingStateHolder
 import com.tunjid.mutator.coroutines.actionStateFlowProducer
@@ -61,7 +62,7 @@ fun CoroutineScope.podcastShowDetailStateProducer(
     showId: String,
     countryCode: String,
     podcastsRepository: PodcastsRepository,
-    getCurrentlyPlayingEpisodePlaybackStateUseCase: GetCurrentlyPlayingEpisodePlaybackStateUseCase,
+    musicPlaybackMonitor: MusicPlaybackMonitor,
 ) = actionStateFlowProducer<PodcastShowDetailAction, PodcastShowDetailUiState>(
     initialState = PodcastShowDetailUiState(
         currentQuery = PodcastQuery(
@@ -71,7 +72,7 @@ fun CoroutineScope.podcastShowDetailStateProducer(
         )
     ),
     mutationFlows = listOf(
-        getCurrentlyPlayingEpisodePlaybackStateUseCase.playbackStateMutations(),
+        musicPlaybackMonitor.playbackStateMutations(),
         podcastsRepository.fetchShowMutations(
             showId = showId,
             countryCode = countryCode
@@ -94,25 +95,25 @@ fun CoroutineScope.podcastShowDetailStateProducer(
     }
 )
 
-private fun GetCurrentlyPlayingEpisodePlaybackStateUseCase.playbackStateMutations(): Flow<Mutation<PodcastShowDetailUiState>> =
+private fun MusicPlaybackMonitor.playbackStateMutations(): Flow<Mutation<PodcastShowDetailUiState>> =
     currentlyPlayingEpisodePlaybackStateStream
         .mapToMutation {
             when (it) {
-                is GetCurrentlyPlayingEpisodePlaybackStateUseCase.PlaybackState.Ended -> copy(
+                is MusicPlaybackMonitor.PlaybackState.Ended -> copy(
                     isCurrentlyPlayingEpisodePaused = null,
                     currentlyPlayingEpisode = null
                 )
 
-                is GetCurrentlyPlayingEpisodePlaybackStateUseCase.PlaybackState.Loading -> copy(
+                is MusicPlaybackMonitor.PlaybackState.Loading -> copy(
                     loadingState = PodcastShowDetailUiState.LoadingState.PLAYBACK_LOADING
                 )
 
-                is GetCurrentlyPlayingEpisodePlaybackStateUseCase.PlaybackState.Paused -> copy(
+                is MusicPlaybackMonitor.PlaybackState.Paused -> copy(
                     currentlyPlayingEpisode = it.pausedEpisode,
                     isCurrentlyPlayingEpisodePaused = true
                 )
 
-                is GetCurrentlyPlayingEpisodePlaybackStateUseCase.PlaybackState.Playing -> copy(
+                is MusicPlaybackMonitor.PlaybackState.Playing -> copy(
                     loadingState = PodcastShowDetailUiState.LoadingState.IDLE,
                     isCurrentlyPlayingEpisodePaused = when (isCurrentlyPlayingEpisodePaused) {
                         null, true -> false

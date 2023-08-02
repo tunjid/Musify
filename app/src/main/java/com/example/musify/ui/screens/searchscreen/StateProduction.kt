@@ -11,7 +11,8 @@ import com.example.musify.data.utils.NetworkMonitor
 import com.example.musify.domain.Genre
 import com.example.musify.domain.SearchResult
 import com.example.musify.domain.SearchResults
-import com.example.musify.usecases.getCurrentlyPlayingTrackUseCase.GetCurrentlyPlayingTrackUseCase
+import com.example.musify.musicplayer.MusicPlaybackMonitor
+import com.example.musify.musicplayer.currentlyPlayingTrackStream
 import com.tunjid.mutator.Mutation
 import com.tunjid.mutator.coroutines.actionStateFlowProducer
 import com.tunjid.mutator.coroutines.mapToMutation
@@ -91,16 +92,16 @@ data class SearchTiledListFlows(
 fun CoroutineScope.searchStateProducer(
     countryCode: String,
     networkMonitor: NetworkMonitor,
+    musicPlaybackMonitor: MusicPlaybackMonitor,
     genresRepository: GenresRepository,
     searchRepository: SearchRepository,
-    getCurrentlyPlayingTrackUseCase: GetCurrentlyPlayingTrackUseCase,
 ) = actionStateFlowProducer<SearchAction, SearchUiState>(
     initialState = SearchUiState(
         genres = genresRepository.fetchAvailableGenres()
     ),
     mutationFlows = listOf(
         networkMonitor.isOnlineMutations(),
-        getCurrentlyPlayingTrackUseCase.playingTrackMutations(),
+        musicPlaybackMonitor.playingTrackMutations(),
     ),
     actionTransform = { actions ->
         actions.toMutationStream(keySelector = SearchAction::key) {
@@ -122,7 +123,7 @@ private fun NetworkMonitor.isOnlineMutations(): Flow<Mutation<SearchUiState>> =
         copy(isOnline = it)
     }
 
-private fun GetCurrentlyPlayingTrackUseCase.playingTrackMutations(): Flow<Mutation<SearchUiState>> =
+private fun MusicPlaybackMonitor.playingTrackMutations(): Flow<Mutation<SearchUiState>> =
     currentlyPlayingTrackStream.mapToMutation {
         copy(currentlyPlayingTrack = it)
     }

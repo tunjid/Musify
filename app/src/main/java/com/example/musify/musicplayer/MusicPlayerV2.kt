@@ -1,10 +1,22 @@
 package com.example.musify.musicplayer
 
 import android.graphics.Bitmap
+import com.example.musify.domain.PodcastEpisode
 import com.example.musify.domain.Streamable
 import kotlinx.coroutines.flow.Flow
 
-interface MusicPlayerV2 {
+interface MusicPlaybackMonitor {
+    val currentPlaybackStateStream: Flow<MusicPlayerV2.PlaybackState>
+
+    sealed interface PlaybackState {
+        data class Playing(val playingEpisode: PodcastEpisode) : PlaybackState
+        data class Paused(val pausedEpisode: PodcastEpisode) : PlaybackState
+        object Loading : PlaybackState
+        object Ended : PlaybackState
+    }
+}
+
+interface MusicPlayerV2 : MusicPlaybackMonitor {
     sealed class PlaybackState(open val currentlyPlayingStreamable: Streamable? = null) {
         data class Loading(val previouslyPlayingStreamable: Streamable?) : PlaybackState()
         data class Playing(
@@ -17,8 +29,6 @@ interface MusicPlayerV2 {
         object Error : PlaybackState()
         object Idle : PlaybackState()
     }
-
-    val currentPlaybackStateStream: Flow<PlaybackState>
 
     val currentPlaybackPositionInMillisFlow: Flow<Long?>
 

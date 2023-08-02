@@ -6,7 +6,8 @@ import com.example.musify.data.utils.NetworkMonitor
 import com.example.musify.data.utils.onConnected
 import com.example.musify.domain.PodcastEpisode
 import com.example.musify.domain.equalsIgnoringImageSize
-import com.example.musify.usecases.getCurrentlyPlayingEpisodePlaybackStateUseCase.GetCurrentlyPlayingEpisodePlaybackStateUseCase
+import com.example.musify.musicplayer.MusicPlaybackMonitor
+import com.example.musify.musicplayer.currentlyPlayingEpisodePlaybackStateStream
 import com.tunjid.mutator.Mutation
 import com.tunjid.mutator.coroutines.actionStateFlowProducer
 import com.tunjid.mutator.coroutines.mapToMutation
@@ -35,12 +36,12 @@ fun CoroutineScope.podcastEpisodeDetailStateProducer(
     episodeId: String,
     countryCode: String,
     networkMonitor: NetworkMonitor,
+    musicPlaybackMonitor: MusicPlaybackMonitor,
     podcastsRepository: PodcastsRepository,
-    getCurrentlyPlayingEpisodePlaybackStateUseCase: GetCurrentlyPlayingEpisodePlaybackStateUseCase
 ) = actionStateFlowProducer<PodcastEpisodeAction, PodcastEpisodeDetailUiState>(
     initialState = PodcastEpisodeDetailUiState(),
     mutationFlows = listOf(
-        getCurrentlyPlayingEpisodePlaybackStateUseCase.playbackStateMutations(),
+        musicPlaybackMonitor.playbackStateMutations(),
         podcastsRepository.fetchEpisodeMutations(
             episodeId = episodeId,
             countryCode = countryCode,
@@ -62,20 +63,20 @@ fun CoroutineScope.podcastEpisodeDetailStateProducer(
     }
 )
 
-private fun GetCurrentlyPlayingEpisodePlaybackStateUseCase.playbackStateMutations(): Flow<Mutation<PodcastEpisodeDetailUiState>> =
+private fun MusicPlaybackMonitor.playbackStateMutations(): Flow<Mutation<PodcastEpisodeDetailUiState>> =
     currentlyPlayingEpisodePlaybackStateStream
         .mapToMutation { playbackState ->
             when (playbackState) {
-                is GetCurrentlyPlayingEpisodePlaybackStateUseCase.PlaybackState.Paused,
-                is GetCurrentlyPlayingEpisodePlaybackStateUseCase.PlaybackState.Ended -> copy(
+                is MusicPlaybackMonitor.PlaybackState.Paused,
+                is MusicPlaybackMonitor.PlaybackState.Ended -> copy(
                     currentlyPlayingEpisode = null
                 )
 
-                is GetCurrentlyPlayingEpisodePlaybackStateUseCase.PlaybackState.Loading -> copy(
+                is MusicPlaybackMonitor.PlaybackState.Loading -> copy(
                     loadingState = PodcastEpisodeDetailUiState.LoadingState.PLAYBACK_LOADING
                 )
 
-                is GetCurrentlyPlayingEpisodePlaybackStateUseCase.PlaybackState.Playing -> copy(
+                is MusicPlaybackMonitor.PlaybackState.Playing -> copy(
                     loadingState = PodcastEpisodeDetailUiState.LoadingState.IDLE,
                     // Initially this.podcastEpisode might be null when the
                     // flow sends it's first emission. This makes it impossible

@@ -7,9 +7,8 @@ import androidx.lifecycle.viewModelScope
 import com.example.musify.data.repositories.albumsrepository.AlbumsRepository
 import com.example.musify.data.repositories.tracksrepository.TracksRepository
 import com.example.musify.data.utils.NetworkMonitor
+import com.example.musify.musicplayer.MusicPlaybackMonitor
 import com.example.musify.ui.navigation.MusifyNavigationDestinations
-import com.example.musify.usecases.getCurrentlyPlayingTrackUseCase.GetCurrentlyPlayingTrackUseCase
-import com.example.musify.usecases.getPlaybackLoadingStatusUseCase.GetPlaybackLoadingStatusUseCase
 import com.example.musify.utils.countryCode
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -22,9 +21,8 @@ class ArtistDetailViewModel @Inject constructor(
     @ApplicationContext context: Context,
     savedStateHandle: SavedStateHandle,
     networkMonitor: NetworkMonitor,
+    musicPlaybackMonitor: MusicPlaybackMonitor,
     albumsRepository: AlbumsRepository,
-    getCurrentlyPlayingTrackUseCase: GetCurrentlyPlayingTrackUseCase,
-    getPlaybackLoadingStatusUseCase: GetPlaybackLoadingStatusUseCase,
     tracksRepository: TracksRepository,
 ) : ViewModel() {
     private val stateProducer =
@@ -43,9 +41,8 @@ class ArtistDetailViewModel @Inject constructor(
             ),
             countryCode = context.countryCode,
             networkMonitor = networkMonitor,
+            musicPlaybackMonitor = musicPlaybackMonitor,
             albumsRepository = albumsRepository,
-            getCurrentlyPlayingTrackUseCase = getCurrentlyPlayingTrackUseCase,
-            getPlaybackLoadingStatusUseCase = getPlaybackLoadingStatusUseCase,
             tracksRepository = tracksRepository
         )
 
