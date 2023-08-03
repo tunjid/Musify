@@ -207,7 +207,7 @@ private fun NavGraphBuilder.playlistDetailScreen(
             totalNumberOfTracks = state.totalNumberOfTracks,
             imageResToUseWhenImageUrlStringIsNull = R.drawable.ic_outline_account_circle_24,
             showOffline = state.showOffline,
-            tracks = state.items,
+            items = state.items,
             onQueryChanged = { actions(PlaylistDetailAction.LoadAround(it)) },
             currentlyPlayingTrack = state.currentlyPlayingTrack,
             onBackButtonClicked = onBackButtonClicked,

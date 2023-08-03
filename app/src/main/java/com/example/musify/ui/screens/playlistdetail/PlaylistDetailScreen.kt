@@ -66,7 +66,7 @@ fun PlaylistDetailScreen(
     totalNumberOfTracks: String,
     showOffline: Boolean,
     @DrawableRes imageResToUseWhenImageUrlStringIsNull: Int,
-    tracks: TiledList<PlaylistQuery, PlayListItem>,
+    items: TiledList<PlaylistQuery, PlayListItem>,
     currentlyPlayingTrack: SearchResult.TrackSearchResult?,
     onQueryChanged: (PlaylistQuery?) -> Unit,
     onBackButtonClicked: () -> Unit,
@@ -125,7 +125,7 @@ fun PlaylistDetailScreen(
                     }
                 }
             } else {
-                items(
+                this.items(
                     items = tracks,
                     key = PlayListItem::pagedIndex
                 ) { playListItem ->
@@ -141,6 +141,7 @@ fun PlaylistDetailScreen(
                             ),
                             contentPadding = PaddingValues(16.dp)
                         )
+
                         is PlayListItem.Placeholder -> MusifyCompactLoadingTrackCard()
                     }
                 }
@@ -178,7 +179,7 @@ fun PlaylistDetailScreen(
         val tracksCount = totalNumberOfTracks.toIntOrNull() ?: 0
         val scrollbarState = lazyListState.tiledListScrollbarState(
             itemsAvailable = tracksCount,
-            tiledItems = tracks
+            tiledItems = items
         )
         lazyListState.DraggableScrollbar(
             modifier = Modifier
@@ -192,12 +193,12 @@ fun PlaylistDetailScreen(
             orientation = Orientation.Vertical,
             onThumbMoved = lazyListState.rememberTiledDraggableScroller(
                 itemsAvailable = tracksCount,
-                tiledItems = tracks,
+                tiledItems = items,
                 onQueryChanged = onQueryChanged,
             )
         )
         lazyListState.PivotedTilingEffect(
-            items = tracks,
+            items = items,
             onQueryChanged = onQueryChanged
         )
     }
