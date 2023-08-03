@@ -64,6 +64,7 @@ fun PlaylistDetailScreen(
     playlistImageUrlString: String?,
     nameOfPlaylistOwner: String,
     totalNumberOfTracks: String,
+    showOffline: Boolean,
     @DrawableRes imageResToUseWhenImageUrlStringIsNull: Int,
     tracks: TiledList<PlaylistQuery, PlayListItem>,
     currentlyPlayingTrack: SearchResult.TrackSearchResult?,
@@ -104,7 +105,7 @@ fun PlaylistDetailScreen(
                 onBackButtonClicked = onBackButtonClicked
             )
             // if error message visible
-            if (false) {
+            if (showOffline) {
                 item {
                     Column(
                         modifier = Modifier

@@ -6,6 +6,7 @@ import com.example.musify.data.tiling.Page
 import com.example.musify.data.tiling.PagedItem
 import com.example.musify.data.tiling.toNetworkBackedTiledList
 import com.example.musify.data.tiling.withPlaceholders
+import com.example.musify.data.utils.NetworkMonitor
 import com.example.musify.domain.SearchResult
 import com.example.musify.musicplayer.MusicPlaybackMonitor
 import com.example.musify.musicplayer.currentlyPlayingTrackStream
@@ -31,9 +32,12 @@ data class PlaylistDetailUiState(
     val ownerName: String,
     val totalNumberOfTracks: String,
     val currentQuery: PlaylistQuery,
+    val isOnline: Boolean = true,
     val currentlyPlayingTrack: SearchResult.TrackSearchResult? = null,
     val items: TiledList<PlaylistQuery, PlayListItem> = emptyTiledList()
 )
+
+val PlaylistDetailUiState.showOffline: Boolean get() = !isOnline && items.isEmpty()
 
 sealed interface PlayListItem : PagedItem {
     data class Loaded(
@@ -59,6 +63,7 @@ fun CoroutineScope.playlistDetailStateProducer(
     ownerName: String,
     totalNumberOfTracks: String,
     countryCode: String,
+    networkMonitor: NetworkMonitor,
     musicPlaybackMonitor: MusicPlaybackMonitor,
     tracksRepository: TracksRepository,
 ) = actionStateFlowProducer<PlaylistDetailAction, PlaylistDetailUiState>(
@@ -74,6 +79,7 @@ fun CoroutineScope.playlistDetailStateProducer(
         )
     ),
     mutationFlows = listOf(
+        networkMonitor.isOnlineMutations(),
         musicPlaybackMonitor.playingTrackMutations(),
     ),
     actionTransform = { actions ->
@@ -86,6 +92,11 @@ fun CoroutineScope.playlistDetailStateProducer(
         }
     }
 )
+
+private fun NetworkMonitor.isOnlineMutations(): Flow<Mutation<PlaylistDetailUiState>> =
+    isOnline.mapToMutation {
+        copy(isOnline = it)
+    }
 
 private fun MusicPlaybackMonitor.playingTrackMutations(): Flow<Mutation<PlaylistDetailUiState>> =
     currentlyPlayingTrackStream.mapToMutation {

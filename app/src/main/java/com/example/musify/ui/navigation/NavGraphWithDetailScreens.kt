@@ -31,6 +31,7 @@ import com.example.musify.ui.screens.artistdetail.ArtistDetailViewModel
 import com.example.musify.ui.screens.playlistdetail.PlaylistDetailAction
 import com.example.musify.ui.screens.playlistdetail.PlaylistDetailScreen
 import com.example.musify.ui.screens.playlistdetail.PlaylistDetailViewModel
+import com.example.musify.ui.screens.playlistdetail.showOffline
 import com.example.musify.ui.screens.podcastepisodedetail.PodcastEpisodeAction
 import com.example.musify.ui.screens.podcastepisodedetail.PodcastEpisodeDetailScreen
 import com.example.musify.ui.screens.podcastepisodedetail.PodcastEpisodeDetailUiState
@@ -205,6 +206,7 @@ private fun NavGraphBuilder.playlistDetailScreen(
             nameOfPlaylistOwner = state.ownerName,
             totalNumberOfTracks = state.totalNumberOfTracks,
             imageResToUseWhenImageUrlStringIsNull = R.drawable.ic_outline_account_circle_24,
+            showOffline = state.showOffline,
             tracks = state.items,
             onQueryChanged = { actions(PlaylistDetailAction.LoadAround(it)) },
             currentlyPlayingTrack = state.currentlyPlayingTrack,
