@@ -83,7 +83,7 @@ fun PodcastShowDetailScreen(
     isPlaybackLoading: Boolean,
     onEpisodeClicked: (PodcastEpisode) -> Unit,
     onQueryChanged: (PodcastQuery?) -> Unit,
-    episodes: TiledList<PodcastQuery, ShowItem>
+    items: TiledList<PodcastQuery, ShowItem>
 ) {
     val lazyListState = rememberLazyListState()
     val isAppBarVisible by remember {
@@ -136,8 +136,8 @@ fun PodcastShowDetailScreen(
                 )
                 Spacer(modifier = Modifier.size(8.dp))
             }
-            items(
-                items = episodes,
+            this.items(
+                items = items,
                 key = ShowItem::pagedIndex
             ) { item ->
                 when (item) {
@@ -177,7 +177,7 @@ fun PodcastShowDetailScreen(
         )
         val scrollbarState = lazyListState.tiledListScrollbarState(
             itemsAvailable = podcastShow.totalEpisodes,
-            tiledItems = episodes
+            tiledItems = items
         )
         lazyListState.DraggableScrollbar(
             modifier = Modifier
@@ -191,12 +191,12 @@ fun PodcastShowDetailScreen(
             orientation = Orientation.Vertical,
             onThumbMoved = lazyListState.rememberTiledDraggableScroller(
                 itemsAvailable = podcastShow.totalEpisodes,
-                tiledItems = episodes,
+                tiledItems = items,
                 onQueryChanged = onQueryChanged,
             )
         )
         lazyListState.PivotedTilingEffect(
-            items = episodes,
+            items = items,
             onQueryChanged = onQueryChanged
         )
     }

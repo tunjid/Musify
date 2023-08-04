@@ -41,7 +41,7 @@ data class PodcastShowDetailUiState(
     enum class LoadingState { IDLE, LOADING, PLAYBACK_LOADING, ERROR }
 }
 
-sealed interface ShowItem: PagedItem {
+sealed interface ShowItem : PagedItem {
     data class Loaded(
         override val pagedIndex: Int,
         val episode: PodcastEpisode
@@ -139,20 +139,21 @@ private fun Flow<PodcastShowDetailAction.Retry>.retryMutations(
 context(SuspendingStateHolder<PodcastShowDetailUiState>)
 private suspend fun Flow<PodcastShowDetailAction.LoadAround>.episodeLoadMutations(
     podcastsRepository: PodcastsRepository
-): Flow<Mutation<PodcastShowDetailUiState>> =
-    map { it.podcastQuery ?: state().currentQuery }
+): Flow<Mutation<PodcastShowDetailUiState>> {
+    val initialState = state()
+    return map { it.podcastQuery ?: state().currentQuery }
         .toNetworkBackedTiledList(
-            startQuery = state().currentQuery,
+            startQuery = initialState.currentQuery,
             fetcher = podcastsRepository::podcastsFor.withPlaceholders(
+                cachedItems = initialState.items,
                 placeholderMapper = ShowItem::Placeholder,
                 loadedMapper = ShowItem::Loaded
             )
         )
-        .mapToMutation { items ->
-            copy(
-                items = items.distinctBy(ShowItem::internalKey)
-            )
+        .mapToMutation { newItems ->
+            copy(items = newItems.distinctBy(ShowItem::internalKey))
         }
+}
 
 private fun PodcastsRepository.fetchShowMutations(
     showId: String,

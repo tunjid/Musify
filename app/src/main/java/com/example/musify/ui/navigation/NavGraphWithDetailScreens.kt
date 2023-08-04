@@ -396,7 +396,7 @@ private fun NavGraphBuilder.podcastShowDetailScreen(
                 isCurrentlyPlayingEpisodePaused = state.isCurrentlyPlayingEpisodePaused,
                 isPlaybackLoading = state.loadingState == PodcastShowDetailUiState.LoadingState.PLAYBACK_LOADING,
                 onEpisodeClicked = onEpisodeClicked,
-                episodes = episodesForShow,
+                items = episodesForShow,
                 onQueryChanged = { actions(PodcastShowDetailAction.LoadAround(it)) },
             )
         }
