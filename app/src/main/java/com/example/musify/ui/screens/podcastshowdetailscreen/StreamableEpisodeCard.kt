@@ -40,8 +40,9 @@ import com.example.musify.R
 import com.example.musify.domain.PodcastEpisode
 import com.example.musify.domain.getFormattedDateAndDurationString
 import com.example.musify.ui.components.AsyncImageWithPlaceholder
+import com.google.accompanist.placeholder.PlaceholderHighlight
 import com.google.accompanist.placeholder.material.placeholder
-import com.google.accompanist.placeholder.placeholder
+import com.google.accompanist.placeholder.material.shimmer
 
 
 @ExperimentalMaterialApi
@@ -75,13 +76,12 @@ fun StreamableEpisodeCard(
 fun StreamableEpisodeLoadingCard(
     modifier: Modifier = Modifier,
 ) {
-    val context = LocalContext.current
     StreamableEpisodeCard(
         isEpisodePlaying = false,
         isCardHighlighted = false,
-        onPlayButtonClicked = {  },
-        onPauseButtonClicked = {  },
-        onClicked = {  },
+        onPlayButtonClicked = { },
+        onPauseButtonClicked = { },
+        onClicked = { },
         thumbnailImageUrlString = null,
         title = null,
         description = null,
@@ -137,7 +137,12 @@ private fun StreamableEpisodeCard(
                     isLoadingPlaceholderVisible = isThumbnailLoading,
                     onImageLoading = { isThumbnailLoading = true })
                 Text(
-                    modifier = Modifier.placeholder(visible = title == null),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .placeholder(
+                            visible = title == null,
+                            highlight = PlaceholderHighlight.shimmer(),
+                        ),
                     text = title ?: "",
                     style = MaterialTheme.typography.subtitle2,
                     fontWeight = FontWeight.SemiBold,
@@ -149,7 +154,12 @@ private fun StreamableEpisodeCard(
 
             }
             Text(
-                modifier = Modifier.placeholder(visible = description == null),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .placeholder(
+                        visible = description == null,
+                        highlight = PlaceholderHighlight.shimmer(),
+                    ),
                 text = description ?: "",
                 style = MaterialTheme.typography.caption.copy(
                     Color.White.copy(alpha = ContentAlpha.medium)

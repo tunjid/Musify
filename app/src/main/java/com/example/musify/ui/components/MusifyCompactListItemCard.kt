@@ -144,10 +144,12 @@ fun MusifyCompactListItemCard(
                 verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
                 Text(
-                    modifier = Modifier.placeholder(
-                        visible = title == null,
-                        highlight = placeholderHighlight
-                    ),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .placeholder(
+                            visible = title == null,
+                            highlight = placeholderHighlight
+                        ),
                     text = title ?: "",
                     fontWeight = FontWeight.Bold,
                     overflow = TextOverflow.Ellipsis,
@@ -155,10 +157,12 @@ fun MusifyCompactListItemCard(
                     style = titleTextStyle
                 )
                 Text(
-                    modifier = Modifier.placeholder(
-                        visible = subtitle == null,
-                        highlight = placeholderHighlight
-                    ),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .placeholder(
+                            visible = subtitle == null,
+                            highlight = placeholderHighlight
+                        ),
                     text = subtitle ?: "",
                     fontWeight = FontWeight.SemiBold,
                     overflow = TextOverflow.Ellipsis,
