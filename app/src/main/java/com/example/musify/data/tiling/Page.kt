@@ -28,7 +28,7 @@ interface PagedQuery<out T> {
 }
 
 /**
- * An Item in a [TiledList] whose queries are [PagedQuery] instnances
+ * An Item in a [TiledList] whose queries are [PagedQuery] instances
  */
 interface PagedItem {
     val pagedIndex: Int
@@ -87,27 +87,43 @@ private fun <T : PagedQuery<T>, R> pivotRequest(
  * Converts the receiving fetcher lambda to a fetcher lambda that returns placeholders immediately,
  * before fetching the original items defined by the fetcher. This facilitates draggable scrollbars
  * for asynchronously fetched items.
+ * [cachedItems] items that may have existed before in case state production was stopped and later
+ * resumed. This prevents overwriting items that existed before.
  * [placeholderMapper] creates interstitial placeholders while the actual items are fetched
  * [loadedMapper] Wraps the actual items after they have been fetched
  */
 fun <T, Query : PagedQuery<Query>, Item : PagedItem> ((Query) -> Flow<List<T>>).withPlaceholders(
+    cachedItems: TiledList<Query, Item>,
     placeholderMapper: (Int) -> Item,
     loadedMapper: (Int, T) -> Item,
-): (Query) -> Flow<List<Item>> = { query ->
-    // The following works by returning the placeholders immediately, so items may be scrolled,
-    // after which the loaded items are then fetched asynchronously.
-    flow {
-        val pageIndices = (query.page.offset until query.page.offset + query.page.limit)
-            .toList()
-        // Return placeholders immediately
-        emit(pageIndices.map(placeholderMapper))
-        // Fetch actual items using the same page indices as the place holders
-        emitAll(
-            this@withPlaceholders(query).map { items ->
-                items.mapIndexed { index, item ->
-                    loadedMapper(pageIndices[index], item)
+): (Query) -> Flow<List<Item>> {
+    val cachedQueriesToItems = mutableMapOf<Query, List<Item>>().apply {
+        (0 until cachedItems.tileCount).forEach { index ->
+            val tile = cachedItems.tileAt(index)
+            put(
+                key = cachedItems.queryAtTile(index),
+                value = cachedItems.subList(tile.start, tile.end)
+            )
+        }
+    }
+    return { query ->
+        // The following works by returning the placeholders immediately, so items may be scrolled,
+        // after which the loaded items are then fetched asynchronously.
+        flow {
+            val pageIndices = (query.page.offset until query.page.offset + query.page.limit)
+                .toList()
+            // Return placeholders, or cached items immediately. Cached items may only be used once
+            emit(
+                cachedQueriesToItems.remove(query) ?: pageIndices.map(placeholderMapper)
+            )
+            // Fetch actual items using the same page indices as the place holders
+            emitAll(
+                this@withPlaceholders(query).map { items ->
+                    items.mapIndexed { index, item ->
+                        loadedMapper(pageIndices[index], item)
+                    }
                 }
-            }
-        )
+            )
+        }
     }
 }

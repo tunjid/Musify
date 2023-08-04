@@ -125,8 +125,8 @@ fun PlaylistDetailScreen(
                     }
                 }
             } else {
-                this.items(
-                    items = tracks,
+                items(
+                    items = items,
                     key = PlayListItem::pagedIndex
                 ) { playListItem ->
                     when(playListItem) {

@@ -106,15 +106,18 @@ private fun MusicPlaybackMonitor.playingTrackMutations(): Flow<Mutation<Playlist
 context(SuspendingStateHolder<PlaylistDetailUiState>)
 private suspend fun Flow<PlaylistDetailAction.LoadAround>.trackListMutations(
     tracksRepository: TracksRepository
-): Flow<Mutation<PlaylistDetailUiState>> =
-    map { it.query ?: state().currentQuery }
+): Flow<Mutation<PlaylistDetailUiState>> {
+    val initialState = state()
+    return map { it.query ?: state().currentQuery }
         .toNetworkBackedTiledList(
-            startQuery = state().currentQuery,
+            startQuery = initialState.currentQuery,
             fetcher = tracksRepository::playListsFor.withPlaceholders(
+                cachedItems = initialState.items,
                 placeholderMapper = PlayListItem::Placeholder,
                 loadedMapper = PlayListItem::Loaded
             )
         )
-        .mapToMutation {
-            copy(items = it.distinctBy(PlayListItem::internalKey))
+        .mapToMutation { newItems ->
+            copy(items = newItems.distinctBy(PlayListItem::internalKey))
         }
+}
