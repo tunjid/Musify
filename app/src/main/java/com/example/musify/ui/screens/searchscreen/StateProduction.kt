@@ -14,6 +14,7 @@ import com.example.musify.domain.SearchResults
 import com.example.musify.musicplayer.MusicPlaybackMonitor
 import com.example.musify.musicplayer.currentlyPlayingTrackStream
 import com.tunjid.mutator.Mutation
+import com.tunjid.mutator.coroutines.SuspendingStateHolder
 import com.tunjid.mutator.coroutines.actionStateFlowProducer
 import com.tunjid.mutator.coroutines.mapToMutation
 import com.tunjid.mutator.coroutines.toMutationStream
@@ -52,9 +53,10 @@ data class SearchUiState(
     val genres: List<Genre> = emptyList(),
     val selectedSearchFilter: SearchFilter = SearchFilter.TRACKS,
     val currentlyPlayingTrack: SearchResult.TrackSearchResult? = null,
+    val contentQueryMap: Map<SearchQueryType, ContentQuery>,
     val tiledItems: SearchTiledListFlows = SearchTiledListFlows(
         albumTiledListFlow = MutableStateFlow(emptyTiledList()),
-        artistTiledListFLow = MutableStateFlow(emptyTiledList()),
+        artistTiledListFlow = MutableStateFlow(emptyTiledList()),
         trackTiledListFlow = MutableStateFlow(emptyTiledList()),
         playlistTiledListFlow = MutableStateFlow(emptyTiledList()),
         podcastTiledListFlow = MutableStateFlow(emptyTiledList()),
@@ -82,7 +84,7 @@ val <T : SearchResult> List<SearchItem<T>>.loadedItem: T?
 
 data class SearchTiledListFlows(
     val albumTiledListFlow: StateFlow<TiledList<ContentQuery, SearchItem<SearchResult.AlbumSearchResult>>>,
-    val artistTiledListFLow: StateFlow<TiledList<ContentQuery, SearchItem<SearchResult.ArtistSearchResult>>>,
+    val artistTiledListFlow: StateFlow<TiledList<ContentQuery, SearchItem<SearchResult.ArtistSearchResult>>>,
     val trackTiledListFlow: StateFlow<TiledList<ContentQuery, SearchItem<SearchResult.TrackSearchResult>>>,
     val playlistTiledListFlow: StateFlow<TiledList<ContentQuery, SearchItem<SearchResult.PlaylistSearchResult>>>,
     val podcastTiledListFlow: StateFlow<TiledList<ContentQuery, SearchItem<SearchResult.PodcastSearchResult>>>,
@@ -97,7 +99,13 @@ fun CoroutineScope.searchStateProducer(
     searchRepository: SearchRepository,
 ) = actionStateFlowProducer<SearchAction, SearchUiState>(
     initialState = SearchUiState(
-        genres = genresRepository.fetchAvailableGenres()
+        genres = genresRepository.fetchAvailableGenres(),
+        contentQueryMap = mapSearchQueryTypesTo { searchQueryType ->
+            searchQueryType.contentQueryFor(
+                searchQuery = "",
+                countryCode = countryCode
+            )
+        }
     ),
     mutationFlows = listOf(
         networkMonitor.isOnlineMutations(),
@@ -133,69 +141,64 @@ private fun Flow<SearchAction.SearchFilterChange>.searchFilterMutations(): Flow<
         copy(selectedSearchFilter = it.searchFilter)
     }
 
+context(SuspendingStateHolder<SearchUiState>)
 private fun Flow<SearchAction.Searches>.searchMutations(
     countryCode: String,
     scope: CoroutineScope,
     searchRepository: SearchRepository
 ): Flow<Mutation<SearchUiState>> = flow {
-    val albumsQuery = SearchQueryType.ALBUM.contentFlow(
-        countryCode = countryCode,
-    )
-    val albumsTiledList = albumsQuery.toTiledList<SearchResult.AlbumSearchResult>(
-        scope = scope,
-        searchRepository = searchRepository
-    )
-
-    val artistsQuery = SearchQueryType.ARTIST.contentFlow(
-        countryCode = countryCode,
-    )
-    val artistsTiledList = artistsQuery.toTiledList<SearchResult.ArtistSearchResult>(
-        scope = scope,
-        searchRepository = searchRepository
-    )
-
-    val episodesQuery = SearchQueryType.EPISODE.contentFlow(
-        countryCode = countryCode,
-    )
-    val episodesTiledList = episodesQuery.toTiledList<SearchResult.EpisodeSearchResult>(
-        scope = scope,
-        searchRepository = searchRepository
-    )
-
-    val playlistsQuery = SearchQueryType.PLAYLIST.contentFlow(
-        countryCode = countryCode,
-    )
-    val playlistsTiledList = playlistsQuery.toTiledList<SearchResult.PlaylistSearchResult>(
-        scope = scope,
-        searchRepository = searchRepository
-    )
-
-    val showsQuery = SearchQueryType.SHOW.contentFlow(
-        countryCode = countryCode,
-    )
-    val showsTiledList = showsQuery.toTiledList<SearchResult.PodcastSearchResult>(
-        scope = scope,
-        searchRepository = searchRepository
-    )
-
-    val tracksQuery = SearchQueryType.TRACK.contentFlow(
-        countryCode = countryCode,
-    )
-    val trackTiledList = tracksQuery.toTiledList<SearchResult.TrackSearchResult>(
-        scope = scope,
-        searchRepository = searchRepository
-    )
+    val initialState = state()
+    // Restore queries from last session
+    val queryTypeToQueryStateFlow = mapSearchQueryTypesTo {
+        MutableStateFlow(initialState.contentQueryMap.getValue(it))
+    }
 
     // Emit the tiled item state flows first
     emit {
         copy(
             tiledItems = SearchTiledListFlows(
-                albumTiledListFlow = albumsTiledList,
-                artistTiledListFLow = artistsTiledList,
-                trackTiledListFlow = trackTiledList,
-                playlistTiledListFlow = playlistsTiledList,
-                podcastTiledListFlow = showsTiledList,
-                episodeTiledListFlow = episodesTiledList
+                albumTiledListFlow = queryTypeToQueryStateFlow
+                    .getValue(SearchQueryType.ALBUM)
+                    .toTiledList(
+                        scope = scope,
+                        initialValue = initialState.tiledItems.albumTiledListFlow.value,
+                        searchRepository = searchRepository
+                    ),
+                artistTiledListFlow = queryTypeToQueryStateFlow
+                    .getValue(SearchQueryType.ARTIST)
+                    .toTiledList(
+                        scope = scope,
+                        initialValue = initialState.tiledItems.artistTiledListFlow.value,
+                        searchRepository = searchRepository
+                    ),
+                trackTiledListFlow = queryTypeToQueryStateFlow
+                    .getValue(SearchQueryType.TRACK)
+                    .toTiledList(
+                        scope = scope,
+                        initialValue = initialState.tiledItems.trackTiledListFlow.value,
+                        searchRepository = searchRepository
+                    ),
+                playlistTiledListFlow = queryTypeToQueryStateFlow
+                    .getValue(SearchQueryType.PLAYLIST)
+                    .toTiledList(
+                        scope = scope,
+                        initialValue = initialState.tiledItems.playlistTiledListFlow.value,
+                        searchRepository = searchRepository
+                    ),
+                podcastTiledListFlow = queryTypeToQueryStateFlow
+                    .getValue(SearchQueryType.SHOW)
+                    .toTiledList(
+                        scope = scope,
+                        initialValue = initialState.tiledItems.podcastTiledListFlow.value,
+                        searchRepository = searchRepository
+                    ),
+                episodeTiledListFlow = queryTypeToQueryStateFlow
+                    .getValue(SearchQueryType.EPISODE)
+                    .toTiledList(
+                        scope = scope,
+                        initialValue = initialState.tiledItems.episodeTiledListFlow.value,
+                        searchRepository = searchRepository
+                    )
             )
         )
     }
@@ -203,43 +206,29 @@ private fun Flow<SearchAction.Searches>.searchMutations(
     // Collect from the backing flow and update searches as appropriate
     collect { action ->
         when (action) {
-            is SearchAction.Searches.LoadAround -> when (action.contentQuery?.type) {
-                SearchQueryType.ALBUM -> albumsQuery.value = action.contentQuery
-                SearchQueryType.ARTIST -> artistsQuery.value = action.contentQuery
-                SearchQueryType.PLAYLIST -> playlistsQuery.value = action.contentQuery
-                SearchQueryType.TRACK -> tracksQuery.value = action.contentQuery
-                SearchQueryType.SHOW -> showsQuery.value = action.contentQuery
-                SearchQueryType.EPISODE -> episodesQuery.value = action.contentQuery
+            is SearchAction.Searches.LoadAround -> when (val type = action.contentQuery?.type) {
                 null -> Unit
+                else -> {
+                    queryTypeToQueryStateFlow.getValue(type).value = action.contentQuery
+                    // Update UI state with the latest query
+                    emit { copy(contentQueryMap = contentQueryMap + (type to action.contentQuery)) }
+                }
             }
 
             // Only pages in the pager will have their search queries executed, but the queries
             // for offscreen pages will be saved to begin execution when they're visible
             is SearchAction.Searches.Search -> {
-                albumsQuery.value = SearchQueryType.ALBUM.contentQueryFor(
-                    searchQuery = action.searchQuery,
-                    countryCode = countryCode,
-                )
-                artistsQuery.value = SearchQueryType.ARTIST.contentQueryFor(
-                    searchQuery = action.searchQuery,
-                    countryCode = countryCode,
-                )
-                episodesQuery.value = SearchQueryType.EPISODE.contentQueryFor(
-                    searchQuery = action.searchQuery,
-                    countryCode = countryCode,
-                )
-                playlistsQuery.value = SearchQueryType.PLAYLIST.contentQueryFor(
-                    searchQuery = action.searchQuery,
-                    countryCode = countryCode,
-                )
-                showsQuery.value = SearchQueryType.SHOW.contentQueryFor(
-                    searchQuery = action.searchQuery,
-                    countryCode = countryCode,
-                )
-                tracksQuery.value = SearchQueryType.TRACK.contentQueryFor(
-                    searchQuery = action.searchQuery,
-                    countryCode = countryCode,
-                )
+                val newContentQueryMap = mapSearchQueryTypesTo { searchQueryType ->
+                    searchQueryType.contentQueryFor(
+                        searchQuery = action.searchQuery,
+                        countryCode = countryCode
+                    )
+                }
+                queryTypeToQueryStateFlow.forEach { (type, stateFlow) ->
+                    stateFlow.value = newContentQueryMap.getValue(type)
+                }
+                // Update UI state with the latest queries
+                emit { copy(contentQueryMap = newContentQueryMap) }
             }
         }
     }
@@ -247,6 +236,7 @@ private fun Flow<SearchAction.Searches>.searchMutations(
 
 private inline fun <reified T : SearchResult> MutableStateFlow<ContentQuery>.toTiledList(
     scope: CoroutineScope,
+    initialValue: TiledList<ContentQuery, SearchItem<T>>,
     searchRepository: SearchRepository
 ): StateFlow<TiledList<ContentQuery, SearchItem<T>>> {
     val startPage = value.page
@@ -277,7 +267,7 @@ private inline fun <reified T : SearchResult> MutableStateFlow<ContentQuery>.toT
         .stateIn(
             scope = scope,
             started = SharingStarted.WhileSubscribed(5_000),
-            initialValue = emptyTiledList()
+            initialValue = initialValue
         )
 }
 
@@ -291,11 +281,8 @@ private fun SearchQueryType.contentQueryFor(
     countryCode = countryCode
 )
 
-private fun SearchQueryType.contentFlow(
-    countryCode: String
-) = MutableStateFlow(
-    contentQueryFor(
-        searchQuery = "",
-        countryCode = countryCode
+fun <T> mapSearchQueryTypesTo(mapper: (SearchQueryType) -> T) =
+    SearchQueryType.values().associateBy(
+        keySelector = { it },
+        valueTransform = mapper
     )
-)

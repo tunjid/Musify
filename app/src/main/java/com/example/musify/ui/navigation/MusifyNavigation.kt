@@ -133,7 +133,7 @@ private fun NavGraphBuilder.searchScreen(
                 val imageUrl = when (state.selectedSearchFilter) {
                     SearchFilter.ALBUMS -> state.tiledItems.albumTiledListFlow.value.loadedItem?.albumArtUrlString
                     SearchFilter.TRACKS -> state.tiledItems.trackTiledListFlow.value.loadedItem?.imageUrlString
-                    SearchFilter.ARTISTS -> state.tiledItems.artistTiledListFLow.value.loadedItem?.imageUrlString
+                    SearchFilter.ARTISTS -> state.tiledItems.artistTiledListFlow.value.loadedItem?.imageUrlString
                     SearchFilter.PLAYLISTS -> state.tiledItems.playlistTiledListFlow.value.loadedItem?.imageUrlString
                     SearchFilter.PODCASTS -> state.tiledItems.podcastTiledListFlow.value.loadedItem?.imageUrlString
                 }

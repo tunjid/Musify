@@ -182,7 +182,7 @@ private fun SearchQueryList(
 
             SearchFilter.ARTISTS -> SearchArtistListItems(
                 isOnline = isOnline,
-                artistListForSearchQuery = tiledListFlows.artistTiledListFLow,
+                artistListForSearchQuery = tiledListFlows.artistTiledListFlow,
                 onItemClick = onItemClick,
                 onQueryChanged = onQueryChanged,
                 artistImageErrorPainter = rememberVectorPainter(
