@@ -53,7 +53,7 @@ fun <Query : PagedQuery<Query>, Item> Flow<Query>.toNetworkBackedTiledList(
                 comparator = compareBy { it.page.offset }
             ),
             limiter = Tile.Limiter(
-                maxQueries = 5
+                maxQueries = 3
             ),
             fetcher = { query ->
                 fetcher(query)
