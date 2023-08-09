@@ -1,8 +1,5 @@
 package com.example.musify.ui.screens.albumdetail
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -12,13 +9,13 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.layout.windowInsetsBottomHeight
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyListScope
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.ContentAlpha
@@ -27,7 +24,6 @@ import androidx.compose.material.LocalTextStyle
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -35,7 +31,9 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.example.musify.domain.SearchResult
 import com.example.musify.ui.components.DefaultMusifyLoadingAnimation
@@ -45,12 +43,18 @@ import com.example.musify.ui.components.ImageHeaderWithMetadata
 import com.example.musify.ui.components.MusifyBottomNavigationConstants
 import com.example.musify.ui.components.MusifyCompactTrackCard
 import com.example.musify.ui.components.MusifyMiniPlayerConstants
+import com.example.musify.ui.components.collapsingheader.CollapsingHeader
+import com.example.musify.ui.components.detailCollapsingHeaderState
+import com.example.musify.ui.components.detailTopAppBarGradient
 import com.example.musify.ui.components.scrollbar.DraggableScrollbar
-import com.example.musify.ui.dynamicTheme.dynamicbackgroundmodifier.DynamicBackgroundResource
-import com.example.musify.ui.dynamicTheme.dynamicbackgroundmodifier.dynamicBackground
 import com.example.musify.ui.components.scrollbar.rememberDraggableScroller
 import com.example.musify.ui.components.scrollbar.scrollbarState
+import com.example.musify.ui.components.toNormalizedHeaderProgress
+import com.example.musify.ui.dynamicTheme.dynamicbackgroundmodifier.DynamicBackgroundResource
+import com.example.musify.ui.dynamicTheme.dynamicbackgroundmodifier.backgroundColor
+import com.example.musify.ui.dynamicTheme.dynamicbackgroundmodifier.gradientBackground
 import kotlinx.coroutines.launch
+import kotlin.math.roundToInt
 
 @ExperimentalMaterialApi
 @Composable
@@ -68,13 +72,75 @@ fun AlbumDetailScreen(
 ) {
     var isLoadingPlaceholderForAlbumArtVisible by remember { mutableStateOf(false) }
     val lazyListState = rememberLazyListState()
-    val isAppBarVisible by remember {
-        derivedStateOf { lazyListState.firstVisibleItemIndex > 0 }
-    }
-    val dynamicBackgroundResource =
-        remember { DynamicBackgroundResource.FromImageUrl(albumArtUrlString) }
     val coroutineScope = rememberCoroutineScope()
 
+    val dynamicBackgroundResource = remember {
+        DynamicBackgroundResource.FromImageUrl(albumArtUrlString)
+    }
+    val dynamicBackgroundColor by dynamicBackgroundResource.backgroundColor()
+    val collapsingHeaderState = detailCollapsingHeaderState()
+
+    Box(modifier = Modifier.fillMaxSize()) {
+        CollapsingHeader(
+            state = collapsingHeaderState,
+            headerContent = {
+                HeaderWithImageItem(
+                    dynamicBackgroundColor = dynamicBackgroundColor,
+                    albumName = albumName,
+                    albumArtUrlString = albumArtUrlString,
+                    artistsString = artistsString,
+                    yearOfRelease = yearOfRelease,
+                    headerTranslation = collapsingHeaderState.translation,
+                    translationProgress = collapsingHeaderState.progress,
+                    isLoadingPlaceholderForAlbumArtVisible = isLoadingPlaceholderForAlbumArtVisible,
+                    onImageLoading = { isLoadingPlaceholderForAlbumArtVisible = true },
+                    onImageLoaded = { isLoadingPlaceholderForAlbumArtVisible = false },
+                )
+            },
+            body = {
+                TrackList(
+                    lazyListState = lazyListState,
+                    isErrorMessageVisible = isErrorMessageVisible,
+                    trackList = trackList,
+                    onTrackItemClick = onTrackItemClick,
+                    currentlyPlayingTrack = currentlyPlayingTrack
+                )
+            }
+        )
+        DefaultMusifyLoadingAnimation(
+            modifier = Modifier.align(Alignment.Center),
+            isVisible = isLoading
+        )
+
+        DetailScreenTopAppBar(
+            modifier = Modifier
+                .detailTopAppBarGradient(
+                    startColor = dynamicBackgroundColor,
+                    endColor = MaterialTheme.colors.surface,
+                    progress = collapsingHeaderState.progress.toNormalizedHeaderProgress()
+                )
+                .fillMaxWidth()
+                .align(Alignment.TopCenter)
+                .statusBarsPadding(),
+            title = albumName,
+            contentAlpha = collapsingHeaderState.progress.toNormalizedHeaderProgress(),
+            onBackButtonClicked = onBackButtonClicked,
+            onClick = {
+                coroutineScope.launch { lazyListState.animateScrollToItem(0) }
+            }
+        )
+    }
+}
+
+@ExperimentalMaterialApi
+@Composable
+private fun TrackList(
+    lazyListState: LazyListState,
+    isErrorMessageVisible: Boolean,
+    trackList: List<SearchResult.TrackSearchResult>,
+    onTrackItemClick: (SearchResult.TrackSearchResult) -> Unit,
+    currentlyPlayingTrack: SearchResult.TrackSearchResult?
+) {
     Box(modifier = Modifier.fillMaxSize()) {
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
@@ -83,20 +149,8 @@ fun AlbumDetailScreen(
             ),
             state = lazyListState
         ) {
-            headerWithImageItem(
-                dynamicBackgroundResource = dynamicBackgroundResource,
-                albumName = albumName,
-                albumArtUrlString = albumArtUrlString,
-                artistsString = artistsString,
-                yearOfRelease = yearOfRelease,
-                isLoadingPlaceholderForAlbumArtVisible = isLoadingPlaceholderForAlbumArtVisible,
-                onImageLoading = { isLoadingPlaceholderForAlbumArtVisible = true },
-                onImageLoaded = { isLoadingPlaceholderForAlbumArtVisible = false },
-                onBackButtonClicked = onBackButtonClicked
-            )
-
-            if (isErrorMessageVisible) {
-                item {
+            when {
+                isErrorMessageVisible -> item {
                     Column(
                         modifier = Modifier
                             .align(Alignment.Center)
@@ -114,8 +168,11 @@ fun AlbumDetailScreen(
                         )
                     }
                 }
-            } else {
-                items(trackList) {
+
+                else -> items(
+                    items = trackList,
+                    key = SearchResult.TrackSearchResult::id
+                ) {
                     MusifyCompactTrackCard(
                         track = it,
                         onClick = onTrackItemClick,
@@ -137,28 +194,6 @@ fun AlbumDetailScreen(
                 )
             }
         }
-        DefaultMusifyLoadingAnimation(
-            modifier = Modifier.align(Alignment.Center),
-            isVisible = isLoading
-        )
-        AnimatedVisibility(
-            visible = isAppBarVisible,
-            enter = fadeIn(),
-            exit = fadeOut()
-        ) {
-            DetailScreenTopAppBar(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .align(Alignment.TopCenter)
-                    .statusBarsPadding(),
-                title = albumName,
-                onBackButtonClicked = onBackButtonClicked,
-                dynamicBackgroundResource = dynamicBackgroundResource,
-                onClick = {
-                    coroutineScope.launch { lazyListState.animateScrollToItem(0) }
-                }
-            )
-        }
         val itemsAvailable = trackList.size + 1 // Include header
         val scrollbarState = lazyListState.scrollbarState(
             itemsAvailable = itemsAvailable,
@@ -166,11 +201,7 @@ fun AlbumDetailScreen(
         lazyListState.DraggableScrollbar(
             modifier = Modifier
                 .align(Alignment.CenterEnd)
-                .systemBarsPadding()
-                .padding(
-                    top = 56.dp,
-                    bottom = 56.dp,
-                ),
+                .padding(bottom = 56.dp),
             state = scrollbarState,
             orientation = Orientation.Vertical,
             onThumbMoved = lazyListState.rememberDraggableScroller(
@@ -195,34 +226,39 @@ private fun AlbumArtHeaderMetadata(yearOfRelease: String) {
     )
 }
 
-private fun LazyListScope.headerWithImageItem(
-    dynamicBackgroundResource: DynamicBackgroundResource,
+@Composable
+private fun HeaderWithImageItem(
+    dynamicBackgroundColor: Color,
     albumName: String,
     albumArtUrlString: String,
     artistsString: String,
     yearOfRelease: String,
+    headerTranslation: Float,
+    translationProgress: Float,
     isLoadingPlaceholderForAlbumArtVisible: Boolean,
     onImageLoading: () -> Unit,
-    onImageLoaded: (Throwable?) -> Unit,
-    onBackButtonClicked: () -> Unit
+    onImageLoaded: (Throwable?) -> Unit
 ) {
-    item {
-        Column(
-            modifier = Modifier
-                .dynamicBackground(dynamicBackgroundResource)
-                .statusBarsPadding()
-        ) {
-            ImageHeaderWithMetadata(
-                title = albumName,
-                headerImageSource = HeaderImageSource.ImageFromUrlString(albumArtUrlString),
-                subtitle = artistsString,
-                onBackButtonClicked = onBackButtonClicked,
-                isLoadingPlaceholderVisible = isLoadingPlaceholderForAlbumArtVisible,
-                onImageLoading = onImageLoading,
-                onImageLoaded = onImageLoaded,
-                additionalMetadataContent = { AlbumArtHeaderMetadata(yearOfRelease) }
+    Column(
+        modifier = Modifier
+            .offset { IntOffset(x = 0, y = -headerTranslation.roundToInt()) }
+            .gradientBackground(
+                startColor = dynamicBackgroundColor,
+                endColor = MaterialTheme.colors.surface
             )
-            Spacer(modifier = Modifier.size(16.dp))
-        }
+            .statusBarsPadding()
+    ) {
+        ImageHeaderWithMetadata(
+            title = albumName,
+            headerImageSource = HeaderImageSource.ImageFromUrlString(albumArtUrlString),
+            subtitle = artistsString,
+            headerTranslation = headerTranslation,
+            translationProgress = translationProgress,
+            isLoadingPlaceholderVisible = isLoadingPlaceholderForAlbumArtVisible,
+            onImageLoading = onImageLoading,
+            onImageLoaded = onImageLoaded,
+            additionalMetadataContent = { AlbumArtHeaderMetadata(yearOfRelease) }
+        )
+        Spacer(modifier = Modifier.size(16.dp))
     }
 }

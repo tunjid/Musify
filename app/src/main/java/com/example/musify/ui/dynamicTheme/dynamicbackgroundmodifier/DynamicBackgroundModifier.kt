@@ -1,19 +1,19 @@
 package com.example.musify.ui.dynamicTheme.dynamicbackgroundmodifier
 
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.foundation.background
 import androidx.compose.material.MaterialTheme
-import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.DrawScope
-import androidx.compose.ui.platform.LocalContext
 
 /**
  * A sealed class hierarchy that contains classes representing the
@@ -58,24 +58,13 @@ fun Modifier.dynamicBackground(
     dynamicBackgroundResource: DynamicBackgroundResource = DynamicBackgroundResource.Empty,
     dynamicBackgroundStyle: DynamicBackgroundStyle = DynamicBackgroundStyle.Gradient()
 ) = composed {
-    val themeManager = LocalDynamicThemeManager.current
-    val defaultBackgroundColor = MaterialTheme.colors.background
-    var backgroundColor by remember { mutableStateOf(defaultBackgroundColor) }
+    val backgroundColor by dynamicBackgroundResource.backgroundColor()
     val animatedBackgroundColor by animateColorAsState(targetValue = backgroundColor)
     val backgroundGradientColors = remember(animatedBackgroundColor) {
         listOf(
             animatedBackgroundColor,
             Color(0xFF121212),
         )
-    }
-    LaunchedEffect(dynamicBackgroundResource) {
-        val newBackgroundColor = when (dynamicBackgroundResource) {
-            DynamicBackgroundResource.Empty -> defaultBackgroundColor
-            is DynamicBackgroundResource.FromImageUrl -> themeManager
-                .getBackgroundColorForImageFromUrl(dynamicBackgroundResource.url)
-                ?: return@LaunchedEffect
-        }
-        backgroundColor = newBackgroundColor
     }
 
     Modifier.drawBehind {
@@ -94,6 +83,33 @@ fun Modifier.dynamicBackground(
     }
 }
 
+fun Modifier.gradientBackground(
+    startColor: Color,
+    endColor: Color,
+) = background(
+    brush = Brush.verticalGradient(
+        listOf(
+            startColor,
+            endColor
+        )
+    )
+)
+
+@Composable
+fun DynamicBackgroundResource.backgroundColor(): State<Color> {
+    val dynamicBackgroundResource = this
+    val defaultBackgroundColor = MaterialTheme.colors.background
+    val themeManager = LocalDynamicThemeManager.current
+    return produceState(MaterialTheme.colors.background) {
+        val newBackgroundColor = when (dynamicBackgroundResource) {
+            DynamicBackgroundResource.Empty -> defaultBackgroundColor
+            is DynamicBackgroundResource.FromImageUrl -> themeManager
+                .getBackgroundColorForImageFromUrl(dynamicBackgroundResource.url)
+                ?: return@produceState
+        }
+        value = newBackgroundColor
+    }
+}
 
 private fun DrawScope.drawRectFilledWithColor(
     color: Color,

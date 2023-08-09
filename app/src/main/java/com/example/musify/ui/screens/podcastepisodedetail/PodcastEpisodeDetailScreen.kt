@@ -1,9 +1,6 @@
 package com.example.musify.ui.screens.podcastepisodedetail
 
 import android.text.Spanned
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -30,7 +27,6 @@ import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Share
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -46,6 +42,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.text.HtmlCompat
@@ -57,9 +54,14 @@ import com.example.musify.ui.components.DefaultMusifyLoadingAnimation
 import com.example.musify.ui.components.DetailScreenTopAppBar
 import com.example.musify.ui.components.HtmlTextView
 import com.example.musify.ui.components.MusifyBottomNavigationConstants
+import com.example.musify.ui.components.collapsingheader.CollapsingHeader
+import com.example.musify.ui.components.detailCollapsingHeaderState
+import com.example.musify.ui.components.detailTopAppBarGradient
+import com.example.musify.ui.components.toNormalizedHeaderProgress
 import com.example.musify.ui.dynamicTheme.dynamicbackgroundmodifier.DynamicBackgroundResource
-import com.example.musify.ui.dynamicTheme.dynamicbackgroundmodifier.dynamicBackground
+import com.example.musify.ui.dynamicTheme.dynamicbackgroundmodifier.backgroundColor
 import kotlinx.coroutines.launch
+import kotlin.math.roundToInt
 import com.google.android.material.R as materialR
 
 
@@ -78,68 +80,70 @@ fun PodcastEpisodeDetailScreen(
 ) {
     val context = LocalContext.current
     val lazyListState = rememberLazyListState()
-    val isTopAppBarVisible by remember {
-        derivedStateOf {
-            if (lazyListState.firstVisibleItemIndex != 0) return@derivedStateOf true
-            // The first item in the list is the header with the image of the show.
-            // If the first item (item at index 0) is offset by more than 200dp
-            // display the app bar.
-            lazyListState.firstVisibleItemScrollOffset > 200
-        }
-    }
     val dynamicBackgroundResource = remember(podcastEpisode) {
         DynamicBackgroundResource.FromImageUrl(podcastEpisode.podcastShowInfo.imageUrl)
     }
     val coroutineScope = rememberCoroutineScope()
     val descriptionSpannedText = remember { HtmlCompat.fromHtml(podcastEpisode.htmlDescription, 0) }
 
+    val dynamicBackgroundColor by dynamicBackgroundResource.backgroundColor()
+    val collapsingHeaderState = detailCollapsingHeaderState()
+
     Box {
-        LazyColumn(state = lazyListState) {
-            item {
+        CollapsingHeader(
+            state = collapsingHeaderState,
+            headerContent = {
                 PodcastEpisodeHeader(
+                    modifier = Modifier.offset {
+                        IntOffset(x = 0, y = -collapsingHeaderState.translation.roundToInt())
+                    },
+                    dynamicBackgroundColor = dynamicBackgroundColor,
+                    headerProgress = collapsingHeaderState.progress,
+                    onPodcastShowTitleClicked = navigateToPodcastDetailScreen,
                     episodeImageUrl = podcastEpisode.podcastShowInfo.imageUrl,
                     episodeTitle = podcastEpisode.title,
                     podcastName = podcastEpisode.podcastShowInfo.name,
-                    dateAndDurationString = podcastEpisode.getFormattedDateAndDurationString(context),
-                    onBackButtonClicked = onBackButtonClicked,
-                    onPodcastShowTitleClicked = navigateToPodcastDetailScreen
+                    dateAndDurationString = podcastEpisode.getFormattedDateAndDurationString(context)
                 )
+            },
+            body = {
+                LazyColumn(state = lazyListState) {
+                    item {
+                        // The episode header has a background gradient that needs to
+                        // be edge-to-edge. Therefore, use a separate column to add
+                        // horizontal padding to the rest of the content.
+                        Spacer(Modifier.height(16.dp))
+                        PodcastEpisodeScreenContent(
+                            isEpisodePlaying = isEpisodeCurrentlyPlaying,
+                            htmlDescription = descriptionSpannedText,
+                            onPlayButtonClicked = onPlayButtonClicked,
+                            onPauseButtonClicked = onPauseButtonClicked,
+                            onShareButtonClicked = onShareButtonClicked,
+                            onAddButtonClicked = onAddButtonClicked,
+                            onDownloadButtonClicked = onDownloadButtonClicked,
+                            onSeeAllEpisodesButtonClicked = navigateToPodcastDetailScreen
+                        )
+                    }
+                }
             }
-            item {
-                // The episode header has a background gradient that needs to
-                // be edge-to-edge. Therefore, use a separate column to add
-                // horizontal padding to the rest of the content.
-                Spacer(Modifier.height(16.dp))
-                PodcastEpisodeScreenContent(
-                    isEpisodePlaying = isEpisodeCurrentlyPlaying,
-                    htmlDescription = descriptionSpannedText,
-                    onPlayButtonClicked = onPlayButtonClicked,
-                    onPauseButtonClicked = onPauseButtonClicked,
-                    onShareButtonClicked = onShareButtonClicked,
-                    onAddButtonClicked = onAddButtonClicked,
-                    onDownloadButtonClicked = onDownloadButtonClicked,
-                    onSeeAllEpisodesButtonClicked = navigateToPodcastDetailScreen
+        )
+
+        DetailScreenTopAppBar(
+            modifier = Modifier
+                .detailTopAppBarGradient(
+                    startColor = dynamicBackgroundColor,
+                    endColor = MaterialTheme.colors.surface,
+                    progress = collapsingHeaderState.progress.toNormalizedHeaderProgress()
                 )
-            }
-        }
-        AnimatedVisibility(
-            modifier = Modifier.align(Alignment.TopCenter),
-            visible = isTopAppBarVisible,
-            enter = fadeIn(),
-            exit = fadeOut()
-        ) {
-            DetailScreenTopAppBar(
-                modifier = Modifier
-                    .statusBarsPadding()
-                    .fillMaxWidth(),
-                title = podcastEpisode.title,
-                onBackButtonClicked = onBackButtonClicked,
-                onClick = {
-                    coroutineScope.launch { lazyListState.animateScrollToItem(0) }
-                },
-                dynamicBackgroundResource = dynamicBackgroundResource
-            )
-        }
+                .statusBarsPadding()
+                .fillMaxWidth(),
+            title = podcastEpisode.title,
+            contentAlpha = collapsingHeaderState.progress.toNormalizedHeaderProgress(),
+            onBackButtonClicked = onBackButtonClicked,
+            onClick = {
+                coroutineScope.launch { lazyListState.animateScrollToItem(0) }
+            },
+        )
         DefaultMusifyLoadingAnimation(
             modifier = Modifier.align(Alignment.Center),
             isVisible = isPlaybackLoading
@@ -201,36 +205,32 @@ private fun PodcastEpisodeScreenContent(
 
 @Composable
 private fun PodcastEpisodeHeader(
-    onBackButtonClicked: () -> Unit,
+    modifier: Modifier = Modifier,
+    dynamicBackgroundColor: Color,
+    headerProgress: Float,
     onPodcastShowTitleClicked: () -> Unit,
     episodeImageUrl: String,
     episodeTitle: String,
     podcastName: String,
     dateAndDurationString: String
 ) {
-    val dynamicBackgroundResource =
-        remember { DynamicBackgroundResource.FromImageUrl(episodeImageUrl) }
     var isImageLoadingPlaceholderVisible by remember { mutableStateOf(true) }
 
     Column(
-        modifier = Modifier
-            .dynamicBackground(dynamicBackgroundResource)
+        modifier = modifier
+            .detailTopAppBarGradient(
+                startColor = dynamicBackgroundColor,
+                endColor = MaterialTheme.colors.surface,
+                progress = headerProgress.toNormalizedHeaderProgress()
+            )
             .fillMaxWidth()
             .statusBarsPadding()
-            .padding(horizontal = 16.dp),
+            .padding(
+                vertical = 56.dp,
+                horizontal = 16.dp
+            ),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        IconButton(
-            // add offset to accommodate for the touch target sizing
-            // applied to the icon button
-            modifier = Modifier.offset(x = (-16).dp), onClick = onBackButtonClicked
-        ) {
-            Icon(
-                imageVector = ImageVector.vectorResource(id = R.drawable.ic_baseline_chevron_left_24),
-                contentDescription = null,
-                tint = Color.White
-            )
-        }
         AsyncImageWithPlaceholder(
             modifier = Modifier
                 .size(60.dp)

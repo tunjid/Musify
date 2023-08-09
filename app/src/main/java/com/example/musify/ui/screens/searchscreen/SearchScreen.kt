@@ -109,7 +109,9 @@ fun SearchScreen(
             },
         )
 
-        val pagerState = rememberPagerState()
+        val pagerState = rememberPagerState(
+            pageCount = SearchFilter.values()::size
+        )
 
         LaunchedEffect(currentlySelectedFilter) {
             pagerState.scrollToPage(SearchFilter.values().indexOf(currentlySelectedFilter))
@@ -125,7 +127,6 @@ fun SearchScreen(
         ) { targetState ->
             when (targetState) {
                 true -> HorizontalPager(
-                    pageCount = SearchFilter.values().size,
                     state = pagerState,
                     beyondBoundsPageCount = 0,
                 ) { page ->
