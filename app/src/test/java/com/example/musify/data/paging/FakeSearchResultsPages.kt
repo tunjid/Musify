@@ -1,6 +1,11 @@
 package com.example.musify.data.paging
 
-import com.example.musify.data.remote.response.*
+import com.example.musify.data.remote.response.SearchResultsResponse
+import com.example.musify.data.remote.response.fakeAlbumMetadataResponse
+import com.example.musify.data.remote.response.fakeArtistResponse
+import com.example.musify.data.remote.response.fakePlaylistMetadataResponse
+import com.example.musify.data.remote.response.fakeShowMetadataResponse
+import com.example.musify.data.remote.response.fakeTrackResponseWithAlbumMetadata
 
 enum class FakeSearchResultsPageNumbers(val pageIndexValue: Int) {
     PAGE_1(0),

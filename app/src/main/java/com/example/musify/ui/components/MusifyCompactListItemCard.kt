@@ -1,8 +1,23 @@
 package com.example.musify.ui.components
 
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.*
+import androidx.compose.material.Card
+import androidx.compose.material.ExperimentalMaterialApi
+import androidx.compose.material.Icon
+import androidx.compose.material.IconButton
+import androidx.compose.material.LocalContentAlpha
+import androidx.compose.material.LocalTextStyle
+import androidx.compose.material.MaterialTheme
+import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.runtime.Composable
@@ -22,6 +37,7 @@ import androidx.compose.ui.unit.dp
 import com.example.musify.R
 import com.example.musify.utils.conditional
 import com.google.accompanist.placeholder.PlaceholderHighlight
+import com.google.accompanist.placeholder.material.placeholder
 import com.google.accompanist.placeholder.material.shimmer
 
 /**
@@ -60,12 +76,6 @@ enum class ListItemCardType { ALBUM, ARTIST, TRACK, PLAYLIST }
  * color, font, line height etc.
  * @param subtitleTextStyle the style configuration for the [subtitle] such
  * as color, font, line height etc.
- * @param onThumbnailLoading the callback to execute when the thumbnail
- * image is loading.
- * @param onThumbnailImageLoadingFinished the lambda to execute when the image
- * is done loading. A nullable parameter of type [Throwable] is provided
- * to the lambda, that indicates whether the image loading process was
- * successful or not.
  * @param errorPainter A [Painter] that is displayed when the image request is unsuccessful.
  * @param isLoadingPlaceHolderVisible indicates whether the loading
  * placeholder is visible for the thumbnail image.
@@ -77,8 +87,8 @@ enum class ListItemCardType { ALBUM, ARTIST, TRACK, PLAYLIST }
 @ExperimentalMaterialApi
 @Composable
 fun MusifyCompactListItemCard(
-    title: String,
-    subtitle: String,
+    title: String?,
+    subtitle: String?,
     onClick: () -> Unit,
     trailingButtonIcon: ImageVector,
     onTrailingButtonIconClick: () -> Unit,
@@ -90,8 +100,6 @@ fun MusifyCompactListItemCard(
     titleTextStyle: TextStyle = LocalTextStyle.current,
     subtitleTextStyle: TextStyle = LocalTextStyle.current,
     isLoadingPlaceHolderVisible: Boolean = false,
-    onThumbnailLoading: (() -> Unit)? = null,
-    onThumbnailImageLoadingFinished: ((Throwable?) -> Unit)? = null,
     errorPainter: Painter? = null,
     placeholderHighlight: PlaceholderHighlight = PlaceholderHighlight.shimmer(),
     contentPadding: PaddingValues = PaddingValues(all = 8.dp)
@@ -121,8 +129,8 @@ fun MusifyCompactListItemCard(
                     model = it,
                     contentScale = ContentScale.Crop,
                     isLoadingPlaceholderVisible = isLoadingPlaceHolderVisible,
-                    onImageLoading = { onThumbnailLoading?.invoke() },
-                    onImageLoadingFinished = { onThumbnailImageLoadingFinished?.invoke(it) },
+                    onImageLoading = { },
+                    onImageLoadingFinished = { },
                     placeholderHighlight = placeholderHighlight,
                     errorPainter = errorPainter,
                     alpha = LocalContentAlpha.current,
@@ -136,14 +144,26 @@ fun MusifyCompactListItemCard(
                 verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
                 Text(
-                    text = title,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .placeholder(
+                            visible = title == null,
+                            highlight = placeholderHighlight
+                        ),
+                    text = title ?: "",
                     fontWeight = FontWeight.Bold,
                     overflow = TextOverflow.Ellipsis,
                     maxLines = 1,
                     style = titleTextStyle
                 )
                 Text(
-                    text = subtitle,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .placeholder(
+                            visible = subtitle == null,
+                            highlight = placeholderHighlight
+                        ),
+                    text = subtitle ?: "",
                     fontWeight = FontWeight.SemiBold,
                     overflow = TextOverflow.Ellipsis,
                     maxLines = 1,
@@ -187,15 +207,7 @@ fun MusifyCompactListItemCard(
  * color, font, line height etc.
  * @param subtitleTextStyle The style configuration for the [subtitle] such
  * as color, font, line height etc.
- * @param onThumbnailLoading the callback to execute when the thumbnail
- * image is loading.
- * @param onThumbnailImageLoadingFinished the lambda to execute when the image
- * is done loading. A nullable parameter of type [Throwable] is provided
- * to the lambda, that indicates whether the image loading process was
- * successful or not.
  * @param errorPainter A [Painter] that is displayed when the image request is unsuccessful.
- * @param isLoadingPlaceHolderVisible indicates whether the loading
- * placeholder is visible for the thumbnail image.
  * @param contentPadding the [PaddingValues] to be applied to the content
  * of the card.
  * @param placeholderHighlight the [PlaceholderHighlight] to apply to the
@@ -205,8 +217,8 @@ fun MusifyCompactListItemCard(
 @Composable
 fun MusifyCompactListItemCard(
     cardType: ListItemCardType,
-    title: String,
-    subtitle: String,
+    title: String?,
+    subtitle: String?,
     thumbnailImageUrlString: String?,
     onClick: () -> Unit,
     onTrailingButtonIconClick: () -> Unit,
@@ -215,9 +227,6 @@ fun MusifyCompactListItemCard(
     shape: Shape = MaterialTheme.shapes.medium,
     titleTextStyle: TextStyle = LocalTextStyle.current,
     subtitleTextStyle: TextStyle = LocalTextStyle.current,
-    isLoadingPlaceHolderVisible: Boolean = false,
-    onThumbnailLoading: (() -> Unit)? = null,
-    onThumbnailImageLoadingFinished: ((Throwable?) -> Unit)? = null,
     errorPainter: Painter? = null,
     placeholderHighlight: PlaceholderHighlight = PlaceholderHighlight.shimmer(),
     contentPadding: PaddingValues = PaddingValues(8.dp)
@@ -238,9 +247,6 @@ fun MusifyCompactListItemCard(
         thumbnailShape = if (cardType == ListItemCardType.ARTIST) CircleShape else null,
         titleTextStyle = titleTextStyle,
         subtitleTextStyle = subtitleTextStyle,
-        isLoadingPlaceHolderVisible = isLoadingPlaceHolderVisible,
-        onThumbnailLoading = onThumbnailLoading,
-        onThumbnailImageLoadingFinished = onThumbnailImageLoadingFinished,
         placeholderHighlight = placeholderHighlight,
         errorPainter = errorPainter,
         contentPadding = contentPadding

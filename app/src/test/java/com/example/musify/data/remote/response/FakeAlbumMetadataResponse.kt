@@ -8,12 +8,12 @@ private val fakeArtistInfoResponse = AlbumMetadataResponse.ArtistInfoResponse(
     "test artist"
 )
 
-val  fakeAlbumMetadataResponse = AlbumMetadataResponse(
+val fakeAlbumMetadataResponse = AlbumMetadataResponse(
     id = "testId",
     name = "testName",
     albumType = "testAlbumType",
     artists = listOf(fakeArtistInfoResponse),
-    images = List(3){ fakeImageResponse},
+    images = List(3) { fakeImageResponse },
     releaseDate = LocalDateTime.now().toString(),
     releaseDatePrecision = "",
     totalTracks = 10,

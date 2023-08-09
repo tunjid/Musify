@@ -1,12 +1,29 @@
 package com.example.musify.ui.screens.podcastshowdetailscreen
 
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.*
+import androidx.compose.material.Card
+import androidx.compose.material.ContentAlpha
+import androidx.compose.material.Divider
+import androidx.compose.material.ExperimentalMaterialApi
+import androidx.compose.material.Icon
+import androidx.compose.material.IconButton
+import androidx.compose.material.MaterialTheme
+import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material.icons.outlined.Share
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -23,6 +40,9 @@ import com.example.musify.R
 import com.example.musify.domain.PodcastEpisode
 import com.example.musify.domain.getFormattedDateAndDurationString
 import com.example.musify.ui.components.AsyncImageWithPlaceholder
+import com.google.accompanist.placeholder.PlaceholderHighlight
+import com.google.accompanist.placeholder.material.placeholder
+import com.google.accompanist.placeholder.material.shimmer
 
 
 @ExperimentalMaterialApi
@@ -30,7 +50,7 @@ import com.example.musify.ui.components.AsyncImageWithPlaceholder
 fun StreamableEpisodeCard(
     episode: PodcastEpisode,
     isEpisodePlaying: Boolean,
-    isCardHighlighted:Boolean,
+    isCardHighlighted: Boolean,
     onPlayButtonClicked: () -> Unit,
     onPauseButtonClicked: () -> Unit,
     onClicked: () -> Unit,
@@ -53,16 +73,35 @@ fun StreamableEpisodeCard(
 
 @ExperimentalMaterialApi
 @Composable
-fun StreamableEpisodeCard(
+fun StreamableEpisodeLoadingCard(
+    modifier: Modifier = Modifier,
+) {
+    StreamableEpisodeCard(
+        isEpisodePlaying = false,
+        isCardHighlighted = false,
+        onPlayButtonClicked = { },
+        onPauseButtonClicked = { },
+        onClicked = { },
+        thumbnailImageUrlString = null,
+        title = null,
+        description = null,
+        dateAndDurationString = null,
+        modifier = modifier
+    )
+}
+
+@ExperimentalMaterialApi
+@Composable
+private fun StreamableEpisodeCard(
     isEpisodePlaying: Boolean,
-    isCardHighlighted:Boolean,
+    isCardHighlighted: Boolean,
     onPlayButtonClicked: () -> Unit,
     onPauseButtonClicked: () -> Unit,
     onClicked: () -> Unit,
-    thumbnailImageUrlString: String,
-    title: String,
-    description: String,
-    dateAndDurationString: String,
+    thumbnailImageUrlString: String?,
+    title: String?,
+    description: String?,
+    dateAndDurationString: String?,
     modifier: Modifier = Modifier
 ) {
     var isThumbnailLoading by remember { mutableStateOf(true) }
@@ -98,7 +137,13 @@ fun StreamableEpisodeCard(
                     isLoadingPlaceholderVisible = isThumbnailLoading,
                     onImageLoading = { isThumbnailLoading = true })
                 Text(
-                    text = title,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .placeholder(
+                            visible = title == null,
+                            highlight = PlaceholderHighlight.shimmer(),
+                        ),
+                    text = title ?: "",
                     style = MaterialTheme.typography.subtitle2,
                     fontWeight = FontWeight.SemiBold,
                     maxLines = 1,
@@ -109,7 +154,13 @@ fun StreamableEpisodeCard(
 
             }
             Text(
-                text = description,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .placeholder(
+                        visible = description == null,
+                        highlight = PlaceholderHighlight.shimmer(),
+                    ),
+                text = description ?: "",
                 style = MaterialTheme.typography.caption.copy(
                     Color.White.copy(alpha = ContentAlpha.medium)
                 ),
@@ -118,7 +169,8 @@ fun StreamableEpisodeCard(
                 overflow = TextOverflow.Ellipsis
             )
             Text(
-                text = dateAndDurationString,
+                modifier = Modifier.placeholder(visible = dateAndDurationString == null),
+                text = dateAndDurationString ?: "",
                 style = MaterialTheme
                     .typography
                     .caption

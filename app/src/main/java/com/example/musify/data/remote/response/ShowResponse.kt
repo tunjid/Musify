@@ -13,6 +13,7 @@ data class ShowResponse(
     val name: String,
     val publisher: String,
     @JsonProperty("html_description") val htmlDescription: String,
+    @JsonProperty("total_episodes") val totalEpisodes: Int,
     val images: List<ImageResponse>
 )
 
@@ -25,5 +26,6 @@ fun ShowResponse.toPodcastShow() = PodcastShow(
     name = name,
     imageUrlString = images.getImageResponseForImageSize(MapperImageSize.LARGE).url,
     nameOfPublisher = publisher,
-    htmlDescription = htmlDescription
+    htmlDescription = htmlDescription,
+    totalEpisodes = totalEpisodes,
 )

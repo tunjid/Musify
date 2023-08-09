@@ -1,24 +1,24 @@
 package com.example.musify.data.repositories.albumsrepository
 
-import androidx.paging.Pager
-import androidx.paging.PagingConfig
-import androidx.paging.PagingData
-import com.example.musify.data.paging.AlbumsOfArtistPagingSource
 import com.example.musify.data.remote.musicservice.SpotifyService
+import com.example.musify.data.remote.response.AlbumMetadataResponse
 import com.example.musify.data.remote.response.toAlbumSearchResult
 import com.example.musify.data.remote.response.toAlbumSearchResultList
 import com.example.musify.data.repositories.tokenrepository.TokenRepository
 import com.example.musify.data.repositories.tokenrepository.runCatchingWithToken
 import com.example.musify.data.utils.FetchedResource
+import com.example.musify.data.utils.NetworkMonitor
 import com.example.musify.domain.MusifyErrorType
 import com.example.musify.domain.SearchResult
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 
 class MusifyAlbumsRepository @Inject constructor(
     private val tokenRepository: TokenRepository,
     private val spotifyService: SpotifyService,
-    private val pagingConfig: PagingConfig
+    private val networkMonitor: NetworkMonitor,
 ) : AlbumsRepository {
 
     override suspend fun fetchAlbumsOfArtistWithId(
@@ -41,15 +41,19 @@ class MusifyAlbumsRepository @Inject constructor(
             spotifyService.getAlbumWithId(albumId, countryCode, it).toAlbumSearchResult()
         }
 
-    override fun getPaginatedStreamForAlbumsOfArtist(
-        artistId: String,
-        countryCode: String
-    ): Flow<PagingData<SearchResult.AlbumSearchResult>> = Pager(pagingConfig) {
-        AlbumsOfArtistPagingSource(
-            artistId = artistId,
-            market = countryCode,
-            tokenRepository = tokenRepository,
-            spotifyService = spotifyService
-        )
-    }.flow
+    override fun albumsFor(
+        query: ArtistAlbumsQuery
+    ): Flow<List<SearchResult.AlbumSearchResult>> = networkMonitor.isOnline
+        .filter { it }
+        .map {
+            spotifyService.getAlbumsOfArtistWithId(
+                artistId = query.artistId,
+                market = query.countryCode,
+                token = tokenRepository.getValidBearerToken(),
+                limit = query.page.limit,
+                offset = query.page.offset,
+            )
+                .items
+                .map(AlbumMetadataResponse::toAlbumSearchResult)
+        }
 }

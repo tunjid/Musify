@@ -1,7 +1,7 @@
 package com.example.musify.data.encoder
 
 import com.example.musify.BuildConfig
-import java.util.*
+import java.util.Base64
 
 /**
  * This is a [Base64Encoder] that can be used for unit tests.

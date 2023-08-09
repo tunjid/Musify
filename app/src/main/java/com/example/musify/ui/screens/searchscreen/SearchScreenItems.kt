@@ -1,25 +1,57 @@
 package com.example.musify.ui.screens.searchscreen
 
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.ime
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.windowInsetsBottomHeight
+import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyItemScope
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.paging.compose.LazyPagingItems
-import androidx.paging.compose.items
-import androidx.paging.compose.itemsIndexed
+import com.example.musify.data.repositories.searchrepository.ContentQuery
 import com.example.musify.domain.SearchResult
-import com.example.musify.ui.components.*
+import com.example.musify.ui.components.DefaultMusifyErrorMessage
+import com.example.musify.ui.components.EpisodeListCard
+import com.example.musify.ui.components.ListItemCardType
+import com.example.musify.ui.components.MusifyBottomNavigationConstants
+import com.example.musify.ui.components.MusifyCompactListItemCard
+import com.example.musify.ui.components.MusifyCompactTrackCard
+import com.example.musify.ui.components.MusifyCompactTrackCardDefaults
+import com.example.musify.ui.components.MusifyMiniPlayerConstants
+import com.example.musify.ui.components.PodcastCard
+import com.tunjid.tiler.TiledList
+import com.tunjid.tiler.compose.PivotedTilingEffect
+import kotlinx.coroutines.flow.StateFlow
 
 /**
  * A color that is meant to be applied to all types of search items.
@@ -33,192 +65,199 @@ private val CardBackgroundColor @Composable get() = Color.Transparent
 private val CardShape = RectangleShape
 
 @ExperimentalMaterialApi
-fun LazyListScope.searchTrackListItems(
-    tracksListForSearchQuery: LazyPagingItems<SearchResult.TrackSearchResult>,
+@ExperimentalFoundationApi
+@Composable
+fun SearchTrackListItems(
+    isOnline: Boolean,
     currentlyPlayingTrack: SearchResult.TrackSearchResult?,
+    tracksListForSearchQuery: StateFlow<TiledList<ContentQuery, SearchItem<SearchResult.TrackSearchResult>>>,
+    onQueryChanged: (ContentQuery?) -> Unit,
     onItemClick: (SearchResult) -> Unit,
-    isLoadingPlaceholderVisible: (SearchResult.TrackSearchResult) -> Boolean,
-    onImageLoading: (SearchResult) -> Unit,
-    onImageLoadingFinished: (SearchResult.TrackSearchResult, Throwable?) -> Unit
-) {
-    itemsIndexedWithEmptyListContent(
-        items = tracksListForSearchQuery,
+) = TiledLazyColumn(
+    isOnline = isOnline,
+    itemsFlow = tracksListForSearchQuery,
+    onQueryChanged = onQueryChanged
+) { items ->
+    itemsWithEmptyListContent(
+        items = items,
         cardType = ListItemCardType.TRACK,
-        key = { index, track -> "$index${track.id}" }
-    ) { _, track ->
-        track?.let {
-            MusifyCompactTrackCard(
-                backgroundColor = CardBackgroundColor,
-                shape = CardShape,
-                track = it,
-                onClick = onItemClick,
-                isLoadingPlaceholderVisible = isLoadingPlaceholderVisible(it),
-                onImageLoading = onImageLoading,
-                onImageLoadingFinished = onImageLoadingFinished,
-                isCurrentlyPlaying = it == currentlyPlayingTrack
-            )
-        }
+    ) { track ->
+        MusifyCompactTrackCard(
+            modifier = Modifier.animateItemPlacement(),
+            backgroundColor = CardBackgroundColor,
+            shape = CardShape,
+            track = track,
+            onClick = onItemClick,
+            isCurrentlyPlaying = track == currentlyPlayingTrack
+        )
     }
 }
 
 @ExperimentalMaterialApi
-fun LazyListScope.searchAlbumListItems(
-    albumListForSearchQuery: LazyPagingItems<SearchResult.AlbumSearchResult>,
+@ExperimentalFoundationApi
+@Composable
+fun SearchAlbumListItems(
+    isOnline: Boolean,
+    albumListForSearchQuery: StateFlow<TiledList<ContentQuery, SearchItem<SearchResult.AlbumSearchResult>>>,
+    onQueryChanged: (ContentQuery?) -> Unit,
     onItemClick: (SearchResult) -> Unit,
-    isLoadingPlaceholderVisible: (SearchResult.AlbumSearchResult) -> Boolean,
-    onImageLoading: (SearchResult) -> Unit,
-    onImageLoadingFinished: (SearchResult.AlbumSearchResult, Throwable?) -> Unit
-) {
-
-    itemsIndexedWithEmptyListContent(
-        items = albumListForSearchQuery,
+) = TiledLazyColumn(
+    isOnline = isOnline,
+    itemsFlow = albumListForSearchQuery,
+    onQueryChanged = onQueryChanged
+) { items ->
+    itemsWithEmptyListContent(
+        items = items,
         cardType = ListItemCardType.ALBUM,
-        key = { index, album -> "$index${album.id}" }
-    ) { _, album ->
-        album?.let {
-            MusifyCompactListItemCard(
-                backgroundColor = CardBackgroundColor,
-                shape = CardShape,
-                cardType = ListItemCardType.ALBUM,
-                thumbnailImageUrlString = it.albumArtUrlString,
-                title = it.name,
-                subtitle = it.artistsString,
-                onClick = { onItemClick(it) },
-                onTrailingButtonIconClick = { onItemClick(it) },
-                isLoadingPlaceHolderVisible = isLoadingPlaceholderVisible(it),
-                onThumbnailImageLoadingFinished = { throwable ->
-                    onImageLoadingFinished(it, throwable)
-                },
-                onThumbnailLoading = { onImageLoading(it) },
-                contentPadding = MusifyCompactTrackCardDefaults.defaultContentPadding
-            )
-        }
+    ) { album ->
+        MusifyCompactListItemCard(
+            modifier = Modifier.animateItemPlacement(),
+            backgroundColor = CardBackgroundColor,
+            shape = CardShape,
+            cardType = ListItemCardType.ALBUM,
+            thumbnailImageUrlString = album.albumArtUrlString,
+            title = album.name,
+            subtitle = album.artistsString,
+            onClick = { onItemClick(album) },
+            onTrailingButtonIconClick = { onItemClick(album) },
+            contentPadding = MusifyCompactTrackCardDefaults.defaultContentPadding
+        )
     }
 }
 
 @ExperimentalMaterialApi
-fun LazyListScope.searchArtistListItems(
-    artistListForSearchQuery: LazyPagingItems<SearchResult.ArtistSearchResult>,
+@ExperimentalFoundationApi
+@Composable
+fun SearchArtistListItems(
+    isOnline: Boolean,
+    artistListForSearchQuery: StateFlow<TiledList<ContentQuery, SearchItem<SearchResult.ArtistSearchResult>>>,
     onItemClick: (SearchResult) -> Unit,
-    isLoadingPlaceholderVisible: (SearchResult.ArtistSearchResult) -> Boolean,
-    onImageLoading: (SearchResult) -> Unit,
-    onImageLoadingFinished: (SearchResult.ArtistSearchResult, Throwable?) -> Unit,
+    onQueryChanged: (ContentQuery?) -> Unit,
     artistImageErrorPainter: Painter
-) {
-    itemsIndexedWithEmptyListContent(
-        items = artistListForSearchQuery,
+) = TiledLazyColumn(
+    isOnline = isOnline,
+    itemsFlow = artistListForSearchQuery,
+    onQueryChanged = onQueryChanged
+) { items ->
+    itemsWithEmptyListContent(
+        items = items,
         cardType = ListItemCardType.PLAYLIST,
-        key = { index, artist -> "$index${artist.id}" }
-    ) { _, artist ->
-        artist?.let {
-            MusifyCompactListItemCard(
-                backgroundColor = CardBackgroundColor,
-                shape = CardShape,
-                cardType = ListItemCardType.ARTIST,
-                thumbnailImageUrlString = it.imageUrlString ?: "",
-                title = it.name,
-                subtitle = "Artist",
-                onClick = { onItemClick(it) },
-                onTrailingButtonIconClick = { onItemClick(it) },
-                isLoadingPlaceHolderVisible = isLoadingPlaceholderVisible(it),
-                onThumbnailImageLoadingFinished = { throwable ->
-                    onImageLoadingFinished(it, throwable)
-                },
-                onThumbnailLoading = { onImageLoading(it) },
-                errorPainter = artistImageErrorPainter,
-                contentPadding = MusifyCompactTrackCardDefaults.defaultContentPadding
-            )
-        }
+    ) { artist ->
+        MusifyCompactListItemCard(
+            backgroundColor = CardBackgroundColor,
+            shape = CardShape,
+            cardType = ListItemCardType.ARTIST,
+            thumbnailImageUrlString = artist.imageUrlString ?: "",
+            title = artist.name,
+            subtitle = "Artist",
+            onClick = { onItemClick(artist) },
+            onTrailingButtonIconClick = { onItemClick(artist) },
+            errorPainter = artistImageErrorPainter,
+            contentPadding = MusifyCompactTrackCardDefaults.defaultContentPadding
+        )
     }
 }
 
 @ExperimentalMaterialApi
-fun LazyListScope.searchPlaylistListItems(
-    playlistListForSearchQuery: LazyPagingItems<SearchResult.PlaylistSearchResult>,
+@ExperimentalFoundationApi
+@Composable
+fun SearchPlaylistListItems(
+    isOnline: Boolean,
+    playlistListForSearchQuery: StateFlow<TiledList<ContentQuery, SearchItem<SearchResult.PlaylistSearchResult>>>,
+    onQueryChanged: (ContentQuery?) -> Unit,
     onItemClick: (SearchResult) -> Unit,
-    isLoadingPlaceholderVisible: (SearchResult.PlaylistSearchResult) -> Boolean,
-    onImageLoading: (SearchResult) -> Unit,
-    onImageLoadingFinished: (SearchResult.PlaylistSearchResult, Throwable?) -> Unit,
     playlistImageErrorPainter: Painter
-) {
-    itemsIndexedWithEmptyListContent(
-        items = playlistListForSearchQuery,
+) = TiledLazyColumn(
+    isOnline = isOnline,
+    itemsFlow = playlistListForSearchQuery,
+    onQueryChanged = onQueryChanged
+) { items ->
+    itemsWithEmptyListContent(
+        items = items,
         cardType = ListItemCardType.PLAYLIST,
-        key = { index, playlist -> "$index${playlist.id}" }
-    ) { _, playlist ->
-        playlist?.let {
-            MusifyCompactListItemCard(
-                backgroundColor = CardBackgroundColor,
-                shape = CardShape,
-                cardType = ListItemCardType.PLAYLIST,
-                thumbnailImageUrlString = it.imageUrlString ?: "",
-                title = it.name,
-                subtitle = "Playlist",
-                onClick = { onItemClick(it) },
-                onTrailingButtonIconClick = { onItemClick(it) },
-                isLoadingPlaceHolderVisible = isLoadingPlaceholderVisible(it),
-                onThumbnailImageLoadingFinished = { throwable ->
-                    onImageLoadingFinished(it, throwable)
-                },
-                onThumbnailLoading = { onImageLoading(it) },
-                errorPainter = playlistImageErrorPainter,
-                contentPadding = MusifyCompactTrackCardDefaults.defaultContentPadding
-            )
-        }
+    ) { playlist ->
+        MusifyCompactListItemCard(
+            modifier = Modifier.animateItemPlacement(),
+            backgroundColor = CardBackgroundColor,
+            shape = CardShape,
+            cardType = ListItemCardType.PLAYLIST,
+            thumbnailImageUrlString = playlist.imageUrlString ?: "",
+            title = playlist.name,
+            subtitle = "Playlist",
+            onClick = { onItemClick(playlist) },
+            onTrailingButtonIconClick = { onItemClick(playlist) },
+            errorPainter = playlistImageErrorPainter,
+            contentPadding = MusifyCompactTrackCardDefaults.defaultContentPadding
+        )
     }
 }
 
 @ExperimentalMaterialApi
-fun LazyListScope.searchPodcastListItems(
-    podcastsForSearchQuery: LazyPagingItems<SearchResult.PodcastSearchResult>,
-    episodesForSearchQuery: LazyPagingItems<SearchResult.EpisodeSearchResult>,
+@ExperimentalFoundationApi
+@Composable
+fun SearchPodcastListItems(
+    isOnline: Boolean,
+    podcastsForSearchQuery: StateFlow<TiledList<ContentQuery, SearchItem<SearchResult.PodcastSearchResult>>>,
+    episodesForSearchQuery: StateFlow<TiledList<ContentQuery, SearchItem<SearchResult.EpisodeSearchResult>>>,
+    onQueryChanged: (ContentQuery?) -> Unit,
     onPodcastItemClicked: (SearchResult.PodcastSearchResult) -> Unit,
     onEpisodeItemClicked: (SearchResult.EpisodeSearchResult) -> Unit
 ) {
-    item {
-        Text(
-            modifier = Modifier.padding(
-                horizontal = 16.dp,
-                vertical = 8.dp
-            ),
-            text = "Podcasts & Shows",
-            fontWeight = FontWeight.Bold,
-            style = MaterialTheme.typography.h6
-        )
-        LazyRow(
-            modifier = Modifier
-                .fillParentMaxWidth()
-                .height(238.dp),
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
-            contentPadding = PaddingValues(horizontal = 16.dp)
-        ) {
-            items(podcastsForSearchQuery) { podcast ->
-                podcast?.let {
+    val podcasts by podcastsForSearchQuery.collectAsState()
+    val rowLazyState = rememberLazyListState()
+    rowLazyState.PivotedTilingEffect(
+        items = podcasts,
+        onQueryChanged = { onQueryChanged(it) }
+    )
+    TiledLazyColumn(
+        isOnline = isOnline,
+        itemsFlow = episodesForSearchQuery,
+        onQueryChanged = onQueryChanged
+    ) { items ->
+        item {
+            Text(
+                modifier = Modifier.padding(
+                    horizontal = 16.dp,
+                    vertical = 8.dp
+                ),
+                text = "Podcasts & Shows",
+                fontWeight = FontWeight.Bold,
+                style = MaterialTheme.typography.h6
+            )
+            LazyRow(
+                modifier = Modifier
+                    .fillParentMaxWidth()
+                    .height(238.dp),
+                state = rowLazyState,
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                contentPadding = PaddingValues(horizontal = 16.dp)
+            ) {
+                itemsWithEmptyListContent(
+                    items = podcasts,
+                    emptyListContent = {}
+                ) { podcast ->
                     PodcastCard(
-                        podcastArtUrlString = it.imageUrlString,
-                        name = it.name,
-                        nameOfPublisher = it.nameOfPublisher,
-                        onClick = { onPodcastItemClicked(it) }
+                        podcastArtUrlString = podcast.imageUrlString,
+                        name = podcast.name,
+                        nameOfPublisher = podcast.nameOfPublisher,
+                        onClick = { onPodcastItemClicked(podcast) }
                     )
                 }
             }
         }
-    }
-
-    itemsIndexedWithEmptyListContent(episodesForSearchQuery) { _, episode ->
-        episode?.let {
+        itemsWithEmptyListContent(items) { episode ->
             EpisodeListCard(
-                episodeSearchResult = it,
-                onClick = { onEpisodeItemClicked(it) }
+                modifier = Modifier.animateItemPlacement(),
+                episodeSearchResult = episode,
+                onClick = { onEpisodeItemClicked(episode) }
             )
         }
     }
 }
 
-private fun <T : Any> LazyListScope.itemsIndexedWithEmptyListContent(
-    items: LazyPagingItems<T>,
+private fun <T : SearchResult> LazyListScope.itemsWithEmptyListContent(
+    items: TiledList<ContentQuery, SearchItem<T>>,
     cardType: ListItemCardType? = null,
-    key: ((index: Int, item: T) -> Any)? = null,
     emptyListContent: @Composable LazyItemScope.() -> Unit = {
         val title = remember(cardType) {
             "Couldn't find " +
@@ -241,11 +280,67 @@ private fun <T : Any> LazyListScope.itemsIndexedWithEmptyListContent(
                 .windowInsetsPadding(WindowInsets.ime)
         )
     },
-    itemContent: @Composable LazyItemScope.(index: Int, value: T?) -> Unit
+    itemContent: @Composable LazyItemScope.(value: T) -> Unit
 ) {
-    if (items.loadState.append.endOfPaginationReached && items.itemCount == 0) {
-        item { emptyListContent.invoke(this) }
-    } else {
-        itemsIndexed(items, key, itemContent)
+    items(
+        items = items,
+        key = SearchItem<T>::id,
+        itemContent = {
+            when (it) {
+                SearchItem.Empty -> emptyListContent()
+                is SearchItem.Loaded -> itemContent(it.result)
+            }
+        }
+    )
+}
+
+@Composable
+private fun <Item> TiledLazyColumn(
+    isOnline: Boolean,
+    itemsFlow: StateFlow<TiledList<ContentQuery, Item>>,
+    onQueryChanged: (ContentQuery?) -> Unit,
+    content: LazyListScope.(TiledList<ContentQuery, Item>) -> Unit
+) {
+    var lastQueryText by remember { mutableStateOf<String?>(null) }
+    val lazyListState = rememberLazyListState()
+    val items by itemsFlow.collectAsState()
+    Box(modifier = Modifier.fillMaxSize()) {
+        if (items.isEmpty() && !isOnline) DefaultMusifyErrorMessage(
+            title = "Oops! Something doesn't look right",
+            subtitle = "Please check the internet connection",
+            modifier = Modifier
+                .align(Alignment.Center)
+                .imePadding(),
+            onRetryButtonClicked = { }
+        )
+        else LazyColumn(
+            modifier = Modifier
+                .background(MaterialTheme.colors.background.copy(alpha = 0.7f))
+                .fillMaxSize(),
+            state = lazyListState,
+            contentPadding = PaddingValues(
+                bottom = MusifyBottomNavigationConstants.navigationHeight + MusifyMiniPlayerConstants.miniPlayerHeight
+            ),
+        ) {
+            content(items)
+            item {
+                Spacer(modifier = Modifier.windowInsetsBottomHeight(WindowInsets.navigationBars))
+            }
+        }
+    }
+    lazyListState.PivotedTilingEffect(
+        items = items,
+        onQueryChanged = onQueryChanged
+    )
+
+    // Scroll to top if the search text has changed
+    LaunchedEffect(items, lastQueryText) {
+        if (items.isEmpty()) return@LaunchedEffect
+
+        val latestQueryText = items.queryAt(0).searchQuery
+        if (lastQueryText == latestQueryText) return@LaunchedEffect
+
+        lazyListState.animateScrollToItem(0)
+        lastQueryText = latestQueryText
     }
 }

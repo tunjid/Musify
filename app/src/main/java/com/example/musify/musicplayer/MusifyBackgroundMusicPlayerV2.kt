@@ -15,7 +15,13 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.awaitClose
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.stateIn
 import javax.inject.Inject
 
 
@@ -52,6 +58,7 @@ class MusifyBackgroundMusicPlayerV2 @Inject constructor(
                 player.playbackState == Player.STATE_ENDED -> currentlyPlayingStreamable?.let(
                     MusicPlayerV2.PlaybackState::Ended
                 )
+
                 player.isLoading -> MusicPlayerV2.PlaybackState.Loading(previouslyPlayingStreamable = currentlyPlayingStreamable)
                 else -> null
             } ?: return@createEventsListener
@@ -76,6 +83,19 @@ class MusifyBackgroundMusicPlayerV2 @Inject constructor(
             initialValue = MusicPlayerV2.PlaybackState.Idle
         )
 
+    override val currentPlaybackPositionInMillisFlow: Flow<Long?> =
+        currentPlaybackStateStream.flatMapLatest { playbackState ->
+            when (playbackState) {
+                is MusicPlayerV2.PlaybackState.Ended,
+                MusicPlayerV2.PlaybackState.Error,
+                MusicPlayerV2.PlaybackState.Idle,
+                is MusicPlayerV2.PlaybackState.Loading,
+                is MusicPlayerV2.PlaybackState.Paused -> flowOf(null)
+
+                is MusicPlayerV2.PlaybackState.Playing -> exoPlayer.getCurrentPlaybackProgressFlow()
+            }
+        }
+
     private fun createEventsListener(onEvents: (Player, Player.Events) -> Unit) =
         object : Player.Listener {
             override fun onEvents(player: Player, events: Player.Events) {
@@ -89,7 +109,6 @@ class MusifyBackgroundMusicPlayerV2 @Inject constructor(
     ) = MusicPlayerV2.PlaybackState.Playing(
         currentlyPlayingStreamable = streamable,
         totalDuration = player.duration,
-        currentPlaybackPositionInMillisFlow = player.getCurrentPlaybackProgressFlow()
     )
 
     override fun playStreamable(

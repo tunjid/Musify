@@ -5,7 +5,6 @@ import com.example.musify.data.remote.musicservice.SpotifyService
 import com.example.musify.data.remote.token.tokenmanager.TokenManager
 import com.example.musify.data.repositories.tokenrepository.SpotifyTokenRepository
 import com.example.musify.data.utils.FetchedResource
-import com.example.musify.di.PagingConfigModule
 import com.example.musify.domain.MusifyErrorType
 import com.example.musify.utils.defaultMusifyJacksonConverterFactory
 import kotlinx.coroutines.runBlocking
@@ -77,7 +76,7 @@ class MusifyAlbumsRepositoryTest {
         val albumId = "4aawyAB9vmqN3uQ7FjRGTy"
         // when fetching the album
         val result = runBlocking {
-            musifyAlbumsRepository.fetchAlbumWithId(albumId,"IN")
+            musifyAlbumsRepository.fetchAlbumWithId(albumId, "IN")
         }
         // the return type must be of type FetchedResource.Success
         assert(result is FetchedResource.Success)

@@ -3,7 +3,7 @@ package com.example.musify.data.utils
 import java.time.Duration
 import java.time.LocalDate
 import java.time.format.TextStyle
-import java.util.*
+import java.util.Locale
 
 /**
  * A class that contains the duration and date of an episode

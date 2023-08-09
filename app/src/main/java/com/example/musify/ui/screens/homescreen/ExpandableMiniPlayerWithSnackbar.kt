@@ -15,8 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.example.musify.domain.Streamable
 import com.example.musify.ui.components.MusifyMiniPlayer
-import com.example.musify.ui.screens.NowPlayingScreen
-import com.example.musify.viewmodels.PlaybackViewModel
+import com.example.musify.ui.screens.nowplaying.NowPlayingScreen
 import kotlinx.coroutines.flow.Flow
 
 /**
@@ -49,8 +48,8 @@ fun ExpandableMiniPlayerWithSnackbar(
     onPauseButtonClicked: () -> Unit,
     onPlayButtonClicked: (Streamable) -> Unit,
     isPlaybackPaused: Boolean,
-    timeElapsedStringFlow: Flow<String>,
-    playbackProgressFlow: Flow<Float>,
+    timeElapsedString: String,
+    playbackProgress: Float,
     totalDurationOfCurrentTrackText: String,
     modifier: Modifier = Modifier,
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() }
@@ -68,10 +67,9 @@ fun ExpandableMiniPlayerWithSnackbar(
                 NowPlayingScreen(
                     streamable = streamable,
                     isPlaybackPaused = isPlaybackPaused,
-                    timeElapsedStringFlow = timeElapsedStringFlow,
+                    timeElapsedString = timeElapsedString,
+                    playbackProgress = playbackProgress,
                     totalDurationOfCurrentTrackProvider = { totalDurationOfCurrentTrackText },
-                    playbackDurationRange = PlaybackViewModel.PLAYBACK_PROGRESS_RANGE,
-                    playbackProgressFlow = playbackProgressFlow,
                     onCloseButtonClicked = { isNowPlayingScreenVisible = false },
                     onShuffleButtonClicked = {},
                     onSkipPreviousButtonClicked = {},

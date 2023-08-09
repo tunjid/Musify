@@ -4,7 +4,11 @@ import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.Box
 import androidx.compose.material.ExperimentalMaterialApi
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
@@ -13,22 +17,22 @@ import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import androidx.paging.LoadState
-import androidx.paging.compose.collectAsLazyPagingItems
 import com.example.musify.domain.HomeFeedCarouselCardInfo
 import com.example.musify.domain.HomeFeedFilters
 import com.example.musify.domain.SearchResult
 import com.example.musify.domain.Streamable
 import com.example.musify.ui.dynamicTheme.dynamicbackgroundmodifier.DynamicBackgroundResource
 import com.example.musify.ui.dynamicTheme.dynamicbackgroundmodifier.dynamicBackground
-import com.example.musify.ui.screens.GetPremiumScreen
+import com.example.musify.ui.screens.homescreen.HomeAction
+import com.example.musify.ui.screens.homescreen.HomeFeedLoadingState
+import com.example.musify.ui.screens.homescreen.HomeFeedViewModel
 import com.example.musify.ui.screens.homescreen.HomeScreen
-import com.example.musify.ui.screens.searchscreen.PagingItemsForSearchScreen
+import com.example.musify.ui.screens.premium.GetPremiumScreen
+import com.example.musify.ui.screens.searchscreen.SearchAction
+import com.example.musify.ui.screens.searchscreen.SearchFilter
 import com.example.musify.ui.screens.searchscreen.SearchScreen
-import com.example.musify.viewmodels.homefeedviewmodel.HomeFeedViewModel
-import com.example.musify.viewmodels.searchviewmodel.SearchFilter
-import com.example.musify.viewmodels.searchviewmodel.SearchScreenUiState
-import com.example.musify.viewmodels.searchviewmodel.SearchViewModel
+import com.example.musify.ui.screens.searchscreen.SearchViewModel
+import com.example.musify.ui.screens.searchscreen.loadedItem
 
 @ExperimentalAnimationApi
 @ExperimentalMaterialApi
@@ -87,6 +91,8 @@ private fun NavGraphBuilder.homeScreen(
 ) {
     composable(route) {
         val homeFeedViewModel = hiltViewModel<HomeFeedViewModel>()
+        val state by homeFeedViewModel.state.collectAsState()
+        val actions = remember { homeFeedViewModel.actions }
         val filters = remember {
             listOf(
                 HomeFeedFilters.Music,
@@ -94,15 +100,15 @@ private fun NavGraphBuilder.homeScreen(
             )
         }
         HomeScreen(
-            timeBasedGreeting = homeFeedViewModel.greetingPhrase,
+            timeBasedGreeting = state.greetingPhrase,
             homeFeedFilters = filters,
             currentlySelectedHomeFeedFilter = HomeFeedFilters.None,
             onHomeFeedFilterClick = {},
-            carousels = homeFeedViewModel.homeFeedCarousels.value,
+            carousels = state.homeFeedCarousels,
             onHomeFeedCarouselCardClick = onCarouselCardClicked,
-            isErrorMessageVisible = homeFeedViewModel.uiState.value == HomeFeedViewModel.HomeFeedUiState.ERROR,
-            isLoading = homeFeedViewModel.uiState.value == HomeFeedViewModel.HomeFeedUiState.LOADING,
-            onErrorRetryButtonClick = homeFeedViewModel::refreshFeed
+            isErrorMessageVisible = state.loadingState == HomeFeedLoadingState.ERROR,
+            isLoading = state.loadingState == HomeFeedLoadingState.LOADING,
+            onErrorRetryButtonClick = { actions(HomeAction.Retry) }
         )
     }
 }
@@ -118,73 +124,40 @@ private fun NavGraphBuilder.searchScreen(
 ) {
     composable(route = route) {
         val viewModel = hiltViewModel<SearchViewModel>()
-        val albums = viewModel.albumListForSearchQuery.collectAsLazyPagingItems()
-        val artists = viewModel.artistListForSearchQuery.collectAsLazyPagingItems()
-        val playlists = viewModel.playlistListForSearchQuery.collectAsLazyPagingItems()
-        val tracks = viewModel.trackListForSearchQuery.collectAsLazyPagingItems()
-        val podcasts = viewModel.podcastListForSearchQuery.collectAsLazyPagingItems()
-        val episodes = viewModel.episodeListForSearchQuery.collectAsLazyPagingItems()
-        val pagingItems = remember {
-            PagingItemsForSearchScreen(
-                albums,
-                artists,
-                tracks,
-                playlists,
-                podcasts,
-                episodes
-            )
-        }
-        val uiState by viewModel.uiState
-        val isLoadingError by remember {
-            derivedStateOf {
-                tracks.loadState.refresh is LoadState.Error || tracks.loadState.append is LoadState.Error || tracks.loadState.prepend is LoadState.Error
-            }
-        }
+        val state by viewModel.state.collectAsState()
+        val actions = remember { viewModel.actions }
         val controller = LocalSoftwareKeyboardController.current
-        val genres = remember { viewModel.getAvailableGenres() }
         val filters = remember { SearchFilter.values().toList() }
-        val currentlySelectedFilter by viewModel.currentlySelectedFilter
         val dynamicBackgroundResource by remember {
             derivedStateOf {
-                val imageUrl = when (currentlySelectedFilter) {
-                    SearchFilter.ALBUMS -> albums.itemSnapshotList.firstOrNull()?.albumArtUrlString
-                    SearchFilter.TRACKS -> tracks.itemSnapshotList.firstOrNull()?.imageUrlString
-                    SearchFilter.ARTISTS -> artists.itemSnapshotList.firstOrNull()?.imageUrlString
-                    SearchFilter.PLAYLISTS -> playlists.itemSnapshotList.firstOrNull()?.imageUrlString
-                    SearchFilter.PODCASTS -> podcasts.itemSnapshotList.firstOrNull()?.imageUrlString
+                val imageUrl = when (state.selectedSearchFilter) {
+                    SearchFilter.ALBUMS -> state.tiledItems.albumTiledListFlow.value.loadedItem?.albumArtUrlString
+                    SearchFilter.TRACKS -> state.tiledItems.trackTiledListFlow.value.loadedItem?.imageUrlString
+                    SearchFilter.ARTISTS -> state.tiledItems.artistTiledListFlow.value.loadedItem?.imageUrlString
+                    SearchFilter.PLAYLISTS -> state.tiledItems.playlistTiledListFlow.value.loadedItem?.imageUrlString
+                    SearchFilter.PODCASTS -> state.tiledItems.podcastTiledListFlow.value.loadedItem?.imageUrlString
                 }
                 if (imageUrl == null) DynamicBackgroundResource.Empty
                 else DynamicBackgroundResource.FromImageUrl(imageUrl)
             }
         }
-        val currentlyPlayingTrack by viewModel.currentlyPlayingTrackStream.collectAsState(initial = null)
         Box(modifier = Modifier.dynamicBackground(dynamicBackgroundResource)) {
             SearchScreen(
-                genreList = genres,
+                isOnline = state.isOnline,
+                genreList = state.genres,
                 searchScreenFilters = filters,
+                tiledListFlows = state.tiledItems,
+                currentlyPlayingTrack = state.currentlyPlayingTrack,
+                currentlySelectedFilter = state.selectedSearchFilter,
+                onQueryChanged = { actions(SearchAction.Searches.LoadAround(it)) },
+                onSearchFilterChanged = { actions(SearchAction.SearchFilterChange(it)) },
                 onGenreItemClick = {},
-                onSearchTextChanged = viewModel::search,
-                isLoading = uiState == SearchScreenUiState.LOADING,
-                pagingItems = pagingItems,
+                onSearchTextChanged = { actions(SearchAction.Searches.Search(it)) },
                 onSearchQueryItemClicked = onSearchResultClicked,
-                currentlySelectedFilter = viewModel.currentlySelectedFilter.value,
-                onSearchFilterChanged = viewModel::updateSearchFilter,
-                isSearchErrorMessageVisible = isLoadingError,
                 onImeDoneButtonClicked = {
-                    // Search only if there was an error while loading.
-                    // A manual call to search() is not required
-                    // when there is no error because, search()
-                    // will be called automatically, everytime the
-                    // search text changes. This prevents duplicate
-                    // calls when the user manually clicks the done
-                    // button after typing the search text, in
-                    // which case, the keyboard will just be hidden.
-                    if (isLoadingError) viewModel.search(it)
                     controller?.hide()
                 },
-                currentlyPlayingTrack = currentlyPlayingTrack,
-                isFullScreenNowPlayingOverlayScreenVisible = isFullScreenNowPlayingScreenOverlayVisible,
-                onErrorRetryButtonClick = viewModel::search
+                isFullScreenNowPlayingOverlayScreenVisible = isFullScreenNowPlayingScreenOverlayVisible
             )
         }
     }

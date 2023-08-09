@@ -8,5 +8,6 @@ data class PodcastShow(
     val name: String,
     val imageUrlString: String,
     val nameOfPublisher: String,
-    val htmlDescription: String
+    val htmlDescription: String,
+    val totalEpisodes: Int,
 )

@@ -5,7 +5,11 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.*
+import androidx.compose.material.ContentAlpha
+import androidx.compose.material.LocalTextStyle
+import androidx.compose.material.MaterialTheme
+import androidx.compose.material.OutlinedButton
+import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -20,7 +24,6 @@ import androidx.compose.ui.unit.dp
  * styling of the both the [title] and [subtitle].
  * @param modifier the modifier to be applied to the composable.
  */
-@Deprecated(message = "Use the other overload.")
 @Composable
 fun DefaultMusifyErrorMessage(
     title: String,
@@ -46,11 +49,6 @@ fun DefaultMusifyErrorMessage(
             textAlign = TextAlign.Center
         )
         Spacer(modifier = Modifier.size(8.dp))
-        OutlinedButton(
-            onClick = {},
-            shape = RoundedCornerShape(50),
-            content = { Text(text = "Retry") }
-        )
     }
 }
 

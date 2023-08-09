@@ -2,12 +2,28 @@ package com.example.musify.ui.screens.homescreen
 
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.windowInsetsTopHeight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.material.*
+import androidx.compose.material.ExperimentalMaterialApi
+import androidx.compose.material.Icon
+import androidx.compose.material.IconButton
+import androidx.compose.material.MaterialTheme
+import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.outlined.Settings
@@ -24,7 +40,12 @@ import com.example.musify.R
 import com.example.musify.domain.HomeFeedCarousel
 import com.example.musify.domain.HomeFeedCarouselCardInfo
 import com.example.musify.domain.HomeFeedFilters
-import com.example.musify.ui.components.*
+import com.example.musify.ui.components.DefaultMusifyErrorMessage
+import com.example.musify.ui.components.DefaultMusifyLoadingAnimation
+import com.example.musify.ui.components.HomeFeedCard
+import com.example.musify.ui.components.MusifyBottomNavigationConstants
+import com.example.musify.ui.components.MusifyFilterChip
+import com.example.musify.ui.components.MusifyMiniPlayerConstants
 
 @ExperimentalFoundationApi
 @ExperimentalMaterialApi
@@ -36,7 +57,7 @@ fun HomeScreen(
     onHomeFeedFilterClick: (HomeFeedFilters) -> Unit,
     carousels: List<HomeFeedCarousel>,
     onHomeFeedCarouselCardClick: (HomeFeedCarouselCardInfo) -> Unit,
-    onErrorRetryButtonClick:()->Unit,
+    onErrorRetryButtonClick: () -> Unit,
     isLoading: Boolean,
     isErrorMessageVisible: Boolean,
 ) {

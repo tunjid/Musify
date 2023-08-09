@@ -4,6 +4,9 @@ import android.content.Context
 import com.example.musify.utils.generateMusifyDateAndDurationString
 
 sealed class SearchResult {
+
+    abstract val id: String
+
     /**
      * A class that models the result of a search operation for a
      * specific album.
@@ -11,7 +14,7 @@ sealed class SearchResult {
      * list of artists who worked on the album.
      */
     data class AlbumSearchResult(
-        val id: String,
+        override val id: String,
         val name: String,
         val artistsString: String,
         val albumArtUrlString: String,
@@ -23,7 +26,7 @@ sealed class SearchResult {
      * specific artist.
      */
     data class ArtistSearchResult(
-        val id: String,
+        override val id: String,
         val name: String,
         val imageUrlString: String?
     ) : SearchResult()
@@ -33,7 +36,7 @@ sealed class SearchResult {
      * specific playlist.
      */
     data class PlaylistSearchResult(
-        val id: String,
+        override val id: String,
         val name: String,
         val ownerName: String,
         val totalNumberOfTracks: String,
@@ -47,7 +50,7 @@ sealed class SearchResult {
      * list of artists who worked on the track.
      */
     data class TrackSearchResult(
-        val id: String,
+        override val id: String,
         val name: String,
         val imageUrlString: String,
         val artistsString: String,
@@ -62,14 +65,14 @@ sealed class SearchResult {
     }
 
     data class PodcastSearchResult(
-        val id: String,
+        override val id: String,
         val name: String,
         val nameOfPublisher: String,
         val imageUrlString: String,
     ) : SearchResult()
 
     data class EpisodeSearchResult(
-        val id: String,
+        override val id: String,
         val episodeContentInfo: EpisodeContentInfo,
         val episodeReleaseDateInfo: EpisodeReleaseDateInfo,
         val episodeDurationInfo: EpisodeDurationInfo

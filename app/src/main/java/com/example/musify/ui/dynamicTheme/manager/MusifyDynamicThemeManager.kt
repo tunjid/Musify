@@ -30,9 +30,9 @@ class MusifyDynamicThemeManager(
                 ?.let { Color(it) }
         }
 
-    override suspend fun getBackgroundColorForImageFromUrl(url: String, context: Context): Color? {
+    override suspend fun getBackgroundColorForImageFromUrl(url: String): Color? {
         if (colorCache.get(url) != null) return colorCache.get(url)
-        val bitmap = downloadDrawableFromUrlUseCase.invoke(url, context)
+        val bitmap = downloadDrawableFromUrlUseCase.invoke(url)
             .getOrNull()
             ?.toBitmap() ?: return null
         return getBackgroundColorForBitmap(bitmap).also { colorCache.put(url, it) }
