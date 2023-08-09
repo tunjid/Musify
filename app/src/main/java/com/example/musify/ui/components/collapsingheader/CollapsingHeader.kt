@@ -6,7 +6,8 @@ import androidx.compose.foundation.gestures.AnchoredDraggableState
 import androidx.compose.foundation.gestures.DraggableAnchors
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.anchoredDraggable
-import androidx.compose.foundation.gestures.detectVerticalDragGestures
+import androidx.compose.foundation.gestures.draggable
+import androidx.compose.foundation.gestures.rememberDraggableState
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.offset
 import androidx.compose.runtime.Composable
@@ -20,7 +21,6 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.Velocity
@@ -90,31 +90,50 @@ class CollapsingHeaderState(
     }
 }
 
+@Composable
 @OptIn(ExperimentalFoundationApi::class)
-private fun AnchoredDraggableState<CollapsingHeaderStatus>.nestedScrollConnection() =
-    object : NestedScrollConnection {
-        override fun onPreScroll(
-            available: Offset,
-            source: NestedScrollSource
-        ): Offset = when (val delta = available.y) {
-            in -Float.MAX_VALUE..-Float.MIN_VALUE -> dispatchRawDelta(delta).toOffset()
-            else -> Offset.Zero
-        }
-
-        override fun onPostScroll(
-            consumed: Offset,
-            available: Offset,
-            source: NestedScrollSource
-        ): Offset = dispatchRawDelta(delta = available.y).toOffset()
-
-        override suspend fun onPostFling(
-            consumed: Velocity,
-            available: Velocity
-        ): Velocity {
-            settle(velocity = available.y)
-            return super.onPostFling(consumed, available)
-        }
+fun CollapsingHeader(
+    state: CollapsingHeaderState,
+    headerContent: @Composable () -> Unit,
+    body: @Composable () -> Unit,
+) {
+    val draggableState = rememberDraggableState(
+        onDelta = state.anchoredDraggableState::dispatchRawDelta
+    )
+    Box {
+        Box(
+            modifier = Modifier
+                .draggable(
+                    state = draggableState,
+                    orientation = Orientation.Vertical,
+                    onDragStopped = { velocity -> state.anchoredDraggableState.settle(velocity) }
+                )
+                .onSizeChanged { state.expandedHeight = it.height.toFloat() },
+            content = {
+                headerContent()
+            }
+        )
+        Box(
+            modifier = Modifier
+                .offset {
+                    IntOffset(
+                        x = 0,
+                        y = state.anchoredDraggableState.offset.roundToInt()
+                    )
+                }
+                .anchoredDraggable(
+                    state = state.anchoredDraggableState,
+                    orientation = Orientation.Vertical
+                )
+                .nestedScroll(
+                    connection = state.anchoredDraggableState.nestedScrollConnection()
+                ),
+            content = {
+                body()
+            }
+        )
     }
+}
 
 /**
  * Packed float class to use [mutableLongStateOf] to hold state for expanded and collapsed heights.
@@ -142,44 +161,30 @@ private val Anchors.collapsedHeight
 private val Anchors.expandedHeight
     get() = unpackFloat2(packedValue)
 
-@Composable
 @OptIn(ExperimentalFoundationApi::class)
-fun CollapsingHeader(
-    state: CollapsingHeaderState,
-    headerContent: @Composable () -> Unit,
-    body: @Composable () -> Unit,
-) {
-    Box {
-        Box(
-            modifier = Modifier
-                .pointerInput(Unit) {
-                    detectVerticalDragGestures { _, dragAmount ->
-                        state.anchoredDraggableState.dispatchRawDelta(dragAmount)
-                    }
-                }
-                .onSizeChanged { state.expandedHeight = it.height.toFloat() },
-            content = {
-                headerContent()
-            }
-        )
-        Box(
-            modifier = Modifier
-                .offset {
-                    IntOffset(
-                        x = 0,
-                        y = state.anchoredDraggableState.offset.roundToInt()
-                    )
-                }
-                .anchoredDraggable(
-                    state = state.anchoredDraggableState,
-                    orientation = Orientation.Vertical
-                )
-                .nestedScroll(state.anchoredDraggableState.nestedScrollConnection()),
-            content = {
-                body()
-            }
-        )
+private fun AnchoredDraggableState<CollapsingHeaderStatus>.nestedScrollConnection() =
+    object : NestedScrollConnection {
+        override fun onPreScroll(
+            available: Offset,
+            source: NestedScrollSource
+        ): Offset = when (val delta = available.y) {
+            in -Float.MAX_VALUE..-Float.MIN_VALUE -> dispatchRawDelta(delta).toOffset()
+            else -> Offset.Zero
+        }
+
+        override fun onPostScroll(
+            consumed: Offset,
+            available: Offset,
+            source: NestedScrollSource
+        ): Offset = dispatchRawDelta(delta = available.y).toOffset()
+
+        override suspend fun onPostFling(
+            consumed: Velocity,
+            available: Velocity
+        ): Velocity {
+            settle(velocity = available.y)
+            return super.onPostFling(consumed, available)
+        }
     }
-}
 
 private fun Float.toOffset() = Offset(0f, this)
