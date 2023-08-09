@@ -2,14 +2,11 @@
 
 [![Project Status: Inactive – The project has reached a stable, usable state but is no longer being actively developed; support/maintenance will be provided as time allows.](https://www.repostatus.org/badges/latest/inactive.svg)](https://www.repostatus.org/#inactive)
 
-Musify is a clone of the popular Spotify app built completely using Jetpack compose. Both podcasts
-episodes and tracks are available for playback. Under the hood, it uses the Spotify API to fetch the
-data. It is
-completely built using Jetpack compose. It is also worth noting that it is not a complete one-on-one
-clone of the app. It can be considered as an app
-that is heavily inspired by the design of the official Spotify app with some custom design tweaks.
-It uses many API’s such as Hilt,Retrofit, and Paging 3. I built this project purely for educational
-purposes. I neither intend to release, nor do I plan on monetizing any part of this project.
+This project is my fork of the original [Musify](https://github.com/t3chkid/Musify) open source repository.
+It is an experiment for me to explore and validate app architecture in Compose.
+
+Media in the app is available for playback using the official Spotify API and the app is
+completely built using Jetpack compose.
 
 ## Table of contents
 
@@ -40,7 +37,8 @@ https://user-images.githubusercontent.com/54663474/218087723-0bf43793-3ff4-4e24-
 - [Mokito-Kotlin](https://github.com/mockito/mockito-kotlin) for mocking dependencies in unit tests.
 - [Retrofit](https://square.github.io/retrofit/) for communicating with the Spotify API.
 - [Exoplayer](https://exoplayer.dev) for background playback and music controls.
-- [Paging 3](https://developer.android.com/topic/libraries/architecture/paging/v3-overview) for pagination.
+- [Tiling](https://github.com/tunjid/Tiler) for pagination.
+- [Mutator](https://github.com/tunjid/Mutator) for state production.
 - [Google's palette api](https://developer.android.com/develop/ui/views/graphics/palette-colors) for color extraction from image.
 - [Kotlin Flows](https://developer.android.com/kotlin/flow) for creating reactive streams.
 - [Java 8 Date/Time API](https://www.oracle.com/technical-resources/articles/java/jf14-date-time.html) for dealing with date and time.
@@ -55,11 +53,11 @@ https://user-images.githubusercontent.com/54663474/218087723-0bf43793-3ff4-4e24-
   <dt> Specific error messages ⚠️ </dt>
   <dd> When there is an error, the app will try to be as specific as possible. For example, if no tracks are found for a particular search query, then it’ll be specific and state that no “tracks” where found instead of displaying a generic “no results found” message. This applies for the rest of the app as well. In certain cases, it even provides a retry button. </dd>
   <dt> Insets ⌨️ </dt>
-  <dd> The app uses insets to ensure that the content of the screen doesn't get overlaid by system views. It even accomondates the UI for the IME (on screen keyboard). For example, in the search screen, the loading animation will be moved up when the on screen keyboard appears.</dd>
+  <dd> The app uses insets to ensure that the content of the screen doesn't get overlaid by system views. It even accommodates the UI for the IME (on screen keyboard). For example, in the search screen, the loading animation will be moved up when the on screen keyboard appears.</dd>
   <dt> Time & Locale based in-app content 🕐 </dt>
   <dd> The content displayed in the home screen is based on the current time and locale associated with the user's device. This is made possible because the Spotify API allows the specification of timestamp and locale as query parameters. </dd>
   <dt> Backstack management 🗂 </dt>
-  <dd> The app ensures that the backstack is properly managed. By poping upto, but not including the Home Screen everytime the user navigates to a bottom naivgation destination, the number of destinations in the backstack gets reduced. This imporves the overall UX of the app. </dd>
+  <dd> The app ensures that the backstack is properly managed. By popping up to, but not including the Home Screen everytime the user navigates to a bottom navigation destination, the number of destinations in the backstack gets reduced. This improves the overall UX of the app. </dd>
   <dt> Attention to tiny details 🔍 </dt>
   <dd> The app was built with an attention to even the tiniest of details. These features might seem trivial, but it affects the UX negatively if they are not present. The app tries to mimic such functionality even though they might get unnoticed in order to immitate the features that the app would need, if it were to be officially released. The following are some of the many UX improving features that the app has. <br>
 
@@ -67,7 +65,7 @@ https://user-images.githubusercontent.com/54663474/218087723-0bf43793-3ff4-4e24-
   it. It also uses a subtle animation while entering/exiting.
 - If the user is inside a nested navigation destination associated with a bottom navigation
   destination, and taps on the bottom navigation icon, the backstack would be popped.
-- Plural strings are used to display gramatically correct text. This can be specifically seen in the
+- Plural strings are used to display grammatically correct text. This can be specifically seen in the
   metadata of podcast episodes where the date and duration strings are formatted in a gramatically
   corrected manner. For example, an episode that has a duration of 1 hour is displayed as '1 hr',
   whereas an episode that has a duration of 2 or more hours, is displayed with 'hrs' as a suffix.
@@ -83,10 +81,11 @@ https://user-images.githubusercontent.com/54663474/218087723-0bf43793-3ff4-4e24-
 
 - All concrete implementations are prefixed by the term "Musify".
 - Uses multi-repository pattern.
-- MVVM archtecture.
+- UDF for state production.
+- Pagination is state based and can be stopped and resumed arbitrarily.
 - Commit messages follow the [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/)
   specification.
-- Consists of extensive unit tests with a predominant focus on testing the data layer.
+- ~~Consists of extensive unit tests with a predominant focus on testing the data layer.~~
 - An illustration depicting the setup of the navigation graph can be
   found [here](https://github.com/t3chkid/Musify/tree/main/app/src/main/java/com/example/musify/ui/navigation).
 
