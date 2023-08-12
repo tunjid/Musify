@@ -41,6 +41,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
@@ -109,12 +110,13 @@ fun ArtistDetailScreen(
             headerContent = {
                 ArtistCoverArtHeaderItem(
                     artistName = artistName,
+                    headerTranslation = collapsingHeaderState.translation,
+                    headerTranslationProgress = collapsingHeaderState.progress,
                     artistCoverArtUrlString = artistImageUrlString,
                     fallbackImagePainter = fallbackImagePainter,
                     modifier = Modifier.offset {
                         IntOffset(x = 0, y = -collapsingHeaderState.translation.roundToInt())
                     },
-                    onPLayButtonClick = onPlayButtonClicked,
                     isLoadingPlaceholderVisible = isCoverArtPlaceholderVisible,
                     onCoverArtLoading = { isCoverArtPlaceholderVisible = true }
                 ) { isCoverArtPlaceholderVisible = false }
@@ -153,6 +155,20 @@ fun ArtistDetailScreen(
                 coroutineScope.launch { lazyListState.animateScrollToItem(0) }
             }
         )
+
+        PlayButton(
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .padding(end = 16.dp)
+                .offset {
+                    IntOffset(
+                        x = 0,
+                        y = with(collapsingHeaderState) { expandedHeight - translation }.roundToInt()
+                    )
+                }
+                .offset(y = (-24).dp),
+            onPlayButtonClicked = onPlayButtonClicked)
+
         lazyListState.PivotedTilingEffect(
             items = releases,
             onQueryChanged = onQueryChanged
@@ -173,7 +189,9 @@ private fun TrackList(
     isErrorMessageVisible: Boolean
 ) {
     LazyColumn(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colors.surface),
         state = lazyListState,
         contentPadding = PaddingValues(
             bottom = MusifyBottomNavigationConstants.navigationHeight + MusifyMiniPlayerConstants.miniPlayerHeight
@@ -183,7 +201,7 @@ private fun TrackList(
         item {
             SubtitleText(
                 modifier = Modifier.padding(all = 16.dp),
-                text = "Popular tracks"
+                text = "Popular"
             )
         }
         itemsIndexed(popularTracks) { index, track ->
@@ -276,21 +294,30 @@ private fun SubtitleText(modifier: Modifier = Modifier, text: String) {
 private fun ArtistCoverArtHeaderItem(
     artistName: String,
     artistCoverArtUrlString: String?,
+    headerTranslation: Float,
+    headerTranslationProgress: Float,
     fallbackImagePainter: Painter,
     modifier: Modifier = Modifier,
-    onPLayButtonClick: () -> Unit,
     isLoadingPlaceholderVisible: Boolean = false,
     onCoverArtLoading: (() -> Unit)? = null,
     onCoverArtLoaded: ((Throwable?) -> Unit)? = null,
 ) {
+    val imageScale = 1.1f - headerTranslationProgress * 0.1f
     Box(
         modifier = modifier
-            .fillMaxHeight(0.6f)
+            .fillMaxHeight(0.4f)
             .fillMaxWidth()
     ) {
         if (artistCoverArtUrlString != null) {
             AsyncImageWithPlaceholder(
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .graphicsLayer(
+                        scaleX = imageScale,
+                        scaleY = imageScale,
+                        alpha = 1f - headerTranslationProgress,
+                        translationY = headerTranslation,
+                    ),
                 model = artistCoverArtUrlString,
                 contentScale = ContentScale.Crop,
                 contentDescription = null,
@@ -310,6 +337,11 @@ private fun ArtistCoverArtHeaderItem(
         Box(
             modifier = Modifier
                 .fillMaxSize()
+                .graphicsLayer(
+                    scaleX = imageScale,
+                    scaleY = imageScale,
+                    translationY = headerTranslation,
+                )
                 .background(Color.Black.copy(alpha = 0.2f))
         )
         Text(
@@ -322,19 +354,23 @@ private fun ArtistCoverArtHeaderItem(
             maxLines = 2,
             overflow = TextOverflow.Ellipsis
         )
-        FloatingActionButton(
-            modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .padding(end = 16.dp)
-                .offset(y = 24.dp),
-            backgroundColor = MaterialTheme.colors.primary,
-            onClick = onPLayButtonClick
-        ) {
-            Icon(
-                modifier = Modifier.size(50.dp),
-                imageVector = Icons.Filled.PlayArrow,
-                contentDescription = null
-            )
-        }
+    }
+}
+
+@Composable
+private fun PlayButton(
+    modifier: Modifier = Modifier,
+    onPlayButtonClicked: () -> Unit
+) {
+    FloatingActionButton(
+        modifier = modifier,
+        backgroundColor = MaterialTheme.colors.primary,
+        onClick = onPlayButtonClicked
+    ) {
+        Icon(
+            modifier = Modifier.size(36.dp),
+            imageVector = Icons.Filled.PlayArrow,
+            contentDescription = null
+        )
     }
 }

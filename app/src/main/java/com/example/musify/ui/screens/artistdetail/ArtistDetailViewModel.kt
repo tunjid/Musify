@@ -35,7 +35,7 @@ class ArtistDetailViewModel @Inject constructor(
             ]!!,
             artistImageUrlString = URLDecoder.decode(
                 savedStateHandle[
-                    MusifyNavigationDestinations.ArtistDetailScreen.NAV_ARG_ARTIST_NAME
+                    MusifyNavigationDestinations.ArtistDetailScreen.NAV_ARG_ENCODED_IMAGE_URL_STRING
                 ]!!,
                 StandardCharsets.UTF_8.toString()
             ),
