@@ -6,8 +6,8 @@ import androidx.compose.foundation.gestures.AnchoredDraggableState
 import androidx.compose.foundation.gestures.DraggableAnchors
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.anchoredDraggable
-import androidx.compose.foundation.gestures.draggable
-import androidx.compose.foundation.gestures.rememberDraggableState
+import androidx.compose.foundation.gestures.rememberScrollableState
+import androidx.compose.foundation.gestures.scrollable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.offset
 import androidx.compose.runtime.Composable
@@ -90,6 +90,9 @@ class CollapsingHeaderState(
     }
 }
 
+/**
+ * A collapsing header implementation that has anchored positions.
+ */
 @Composable
 @OptIn(ExperimentalFoundationApi::class)
 fun CollapsingHeader(
@@ -97,17 +100,18 @@ fun CollapsingHeader(
     headerContent: @Composable () -> Unit,
     body: @Composable () -> Unit,
 ) {
-    val draggableState = rememberDraggableState(
-        onDelta = state.anchoredDraggableState::dispatchRawDelta
+    val scrollableState = rememberScrollableState(
+        consumeScrollDelta = state.anchoredDraggableState::dispatchRawDelta
     )
-    Box {
+    Box(
+        // TODO: Make this composable nestable by implementing nested scroll here as well
+        modifier = Modifier.scrollable(
+            state = scrollableState,
+            orientation = Orientation.Vertical,
+        )
+    ) {
         Box(
             modifier = Modifier
-                .draggable(
-                    state = draggableState,
-                    orientation = Orientation.Vertical,
-                    onDragStopped = { velocity -> state.anchoredDraggableState.settle(velocity) }
-                )
                 .onSizeChanged { state.expandedHeight = it.height.toFloat() },
             content = {
                 headerContent()
@@ -126,7 +130,7 @@ fun CollapsingHeader(
                     orientation = Orientation.Vertical
                 )
                 .nestedScroll(
-                    connection = state.anchoredDraggableState.nestedScrollConnection()
+                    connection = state.anchoredDraggableState.nestedScrollConnection(),
                 ),
             content = {
                 body()
