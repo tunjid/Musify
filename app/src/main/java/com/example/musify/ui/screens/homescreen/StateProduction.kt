@@ -13,7 +13,7 @@ import com.example.musify.domain.SearchResult
 import com.example.musify.domain.toHomeFeedCarousel
 import com.example.musify.ui.screens.homescreen.greetingphrasegenerator.GreetingPhraseGenerator
 import com.tunjid.mutator.Mutation
-import com.tunjid.mutator.coroutines.actionStateFlowProducer
+import com.tunjid.mutator.coroutines.actionStateFlowMutator
 import com.tunjid.mutator.coroutines.toMutationStream
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.flatMapLatest
@@ -42,11 +42,11 @@ fun CoroutineScope.homeScreenStateProducer(
     networkMonitor: NetworkMonitor,
     greetingPhraseGenerator: GreetingPhraseGenerator,
     homeFeedRepository: HomeFeedRepository,
-) = actionStateFlowProducer<HomeAction, HomeUiState>(
+) = actionStateFlowMutator<HomeAction, HomeUiState>(
     initialState = HomeUiState(
         greetingPhrase = greetingPhraseGenerator.generatePhrase()
     ),
-    mutationFlows = listOf(
+    inputs = listOf(
         homeFeedRepository.albumReleaseMutations(
             countryCode = countryCode,
             networkMonitor = networkMonitor,

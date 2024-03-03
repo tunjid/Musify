@@ -13,7 +13,7 @@ import com.example.musify.musicplayer.MusicPlaybackMonitor
 import com.example.musify.musicplayer.currentlyPlayingEpisodePlaybackStateStream
 import com.tunjid.mutator.Mutation
 import com.tunjid.mutator.coroutines.SuspendingStateHolder
-import com.tunjid.mutator.coroutines.actionStateFlowProducer
+import com.tunjid.mutator.coroutines.actionStateFlowMutator
 import com.tunjid.mutator.coroutines.mapToMutation
 import com.tunjid.mutator.coroutines.toMutationStream
 import com.tunjid.tiler.TiledList
@@ -63,7 +63,7 @@ fun CoroutineScope.podcastShowDetailStateProducer(
     countryCode: String,
     podcastsRepository: PodcastsRepository,
     musicPlaybackMonitor: MusicPlaybackMonitor,
-) = actionStateFlowProducer<PodcastShowDetailAction, PodcastShowDetailUiState>(
+) = actionStateFlowMutator<PodcastShowDetailAction, PodcastShowDetailUiState>(
     initialState = PodcastShowDetailUiState(
         currentQuery = PodcastQuery(
             showId = showId,
@@ -71,7 +71,7 @@ fun CoroutineScope.podcastShowDetailStateProducer(
             page = Page(offset = 0)
         )
     ),
-    mutationFlows = listOf(
+    inputs = listOf(
         musicPlaybackMonitor.playbackStateMutations(),
         podcastsRepository.fetchShowMutations(
             showId = showId,

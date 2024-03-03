@@ -12,7 +12,7 @@ import com.example.musify.musicplayer.MusicPlaybackMonitor
 import com.example.musify.musicplayer.currentlyPlayingTrackStream
 import com.tunjid.mutator.Mutation
 import com.tunjid.mutator.coroutines.SuspendingStateHolder
-import com.tunjid.mutator.coroutines.actionStateFlowProducer
+import com.tunjid.mutator.coroutines.actionStateFlowMutator
 import com.tunjid.mutator.coroutines.mapToMutation
 import com.tunjid.mutator.coroutines.toMutationStream
 import com.tunjid.tiler.TiledList
@@ -66,7 +66,7 @@ fun CoroutineScope.playlistDetailStateProducer(
     networkMonitor: NetworkMonitor,
     musicPlaybackMonitor: MusicPlaybackMonitor,
     tracksRepository: TracksRepository,
-) = actionStateFlowProducer<PlaylistDetailAction, PlaylistDetailUiState>(
+) = actionStateFlowMutator<PlaylistDetailAction, PlaylistDetailUiState>(
     initialState = PlaylistDetailUiState(
         playlistName = playlistName,
         imageUrlString = imageUrlString,
@@ -78,7 +78,7 @@ fun CoroutineScope.playlistDetailStateProducer(
             page = Page(offset = 0)
         )
     ),
-    mutationFlows = listOf(
+    inputs = listOf(
         networkMonitor.isOnlineMutations(),
         musicPlaybackMonitor.playingTrackMutations(),
     ),
