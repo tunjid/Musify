@@ -7,7 +7,7 @@ import com.example.musify.musicplayer.MusicPlaybackMonitor
 import com.example.musify.musicplayer.currentlyPlayingTrackStream
 import com.example.musify.musicplayer.loadingStatusStream
 import com.tunjid.mutator.Mutation
-import com.tunjid.mutator.coroutines.actionStateFlowProducer
+import com.tunjid.mutator.coroutines.actionStateFlowMutator
 import com.tunjid.mutator.coroutines.mapToMutation
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
@@ -38,14 +38,14 @@ fun CoroutineScope.albumDetailStateProducer(
     countryCode: String,
     tracksRepository: TracksRepository,
     musicPlaybackMonitor: MusicPlaybackMonitor,
-) = actionStateFlowProducer<Unit, AlbumDetailUiState>(
+) = actionStateFlowMutator<Unit, AlbumDetailUiState>(
     initialState = AlbumDetailUiState(
         albumArtUrl = albumArtUrl,
         artists = artists,
         albumName = albumName,
         yearOfRelease = yearOfRelease
     ),
-    mutationFlows = listOf(
+    inputs = listOf(
         musicPlaybackMonitor.playingTrackMutations(),
         musicPlaybackMonitor.loadingStatusMutations(),
         tracksRepository.trackListMutations(

@@ -15,7 +15,7 @@ import com.example.musify.musicplayer.MusicPlaybackMonitor
 import com.example.musify.musicplayer.currentlyPlayingTrackStream
 import com.tunjid.mutator.Mutation
 import com.tunjid.mutator.coroutines.SuspendingStateHolder
-import com.tunjid.mutator.coroutines.actionStateFlowProducer
+import com.tunjid.mutator.coroutines.actionStateFlowMutator
 import com.tunjid.mutator.coroutines.mapToMutation
 import com.tunjid.mutator.coroutines.toMutationStream
 import com.tunjid.tiler.TiledList
@@ -97,7 +97,7 @@ fun CoroutineScope.searchStateProducer(
     musicPlaybackMonitor: MusicPlaybackMonitor,
     genresRepository: GenresRepository,
     searchRepository: SearchRepository,
-) = actionStateFlowProducer<SearchAction, SearchUiState>(
+) = actionStateFlowMutator<SearchAction, SearchUiState>(
     initialState = SearchUiState(
         genres = genresRepository.fetchAvailableGenres(),
         contentQueryMap = mapSearchQueryTypesTo { searchQueryType ->
@@ -107,7 +107,7 @@ fun CoroutineScope.searchStateProducer(
             )
         }
     ),
-    mutationFlows = listOf(
+    inputs = listOf(
         networkMonitor.isOnlineMutations(),
         musicPlaybackMonitor.playingTrackMutations(),
     ),

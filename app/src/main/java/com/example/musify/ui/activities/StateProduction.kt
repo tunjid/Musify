@@ -7,7 +7,7 @@ import com.example.musify.domain.Streamable
 import com.example.musify.musicplayer.MusicPlayerV2
 import com.example.musify.usecases.downloadDrawableFromUrlUseCase.DownloadDrawableFromUrlUseCase
 import com.tunjid.mutator.Mutation
-import com.tunjid.mutator.coroutines.actionStateFlowProducer
+import com.tunjid.mutator.coroutines.actionStateFlowMutator
 import com.tunjid.mutator.coroutines.mapLatestToManyMutations
 import com.tunjid.mutator.coroutines.mapLatestToMutation
 import com.tunjid.mutator.coroutines.toMutationStream
@@ -54,9 +54,9 @@ data class PlaybackUiState(
 fun CoroutineScope.playbackStateProducer(
     musicPlayer: MusicPlayerV2,
     downloadDrawableFromUrlUseCase: DownloadDrawableFromUrlUseCase,
-) = actionStateFlowProducer<PlaybackScreenAction, PlaybackUiState>(
+) = actionStateFlowMutator<PlaybackScreenAction, PlaybackUiState>(
     initialState = PlaybackUiState(),
-    mutationFlows = listOf(
+    inputs = listOf(
         musicPlayer.playbackMutations(),
         musicPlayer.playbackProgressMutations(),
     ),

@@ -9,7 +9,7 @@ import com.example.musify.domain.equalsIgnoringImageSize
 import com.example.musify.musicplayer.MusicPlaybackMonitor
 import com.example.musify.musicplayer.currentlyPlayingEpisodePlaybackStateStream
 import com.tunjid.mutator.Mutation
-import com.tunjid.mutator.coroutines.actionStateFlowProducer
+import com.tunjid.mutator.coroutines.actionStateFlowMutator
 import com.tunjid.mutator.coroutines.mapToMutation
 import com.tunjid.mutator.coroutines.toMutationStream
 import kotlinx.coroutines.CoroutineScope
@@ -38,9 +38,9 @@ fun CoroutineScope.podcastEpisodeDetailStateProducer(
     networkMonitor: NetworkMonitor,
     musicPlaybackMonitor: MusicPlaybackMonitor,
     podcastsRepository: PodcastsRepository,
-) = actionStateFlowProducer<PodcastEpisodeAction, PodcastEpisodeDetailUiState>(
+) = actionStateFlowMutator<PodcastEpisodeAction, PodcastEpisodeDetailUiState>(
     initialState = PodcastEpisodeDetailUiState(),
-    mutationFlows = listOf(
+    inputs = listOf(
         musicPlaybackMonitor.playbackStateMutations(),
         podcastsRepository.fetchEpisodeMutations(
             episodeId = episodeId,
